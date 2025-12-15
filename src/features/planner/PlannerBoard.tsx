@@ -209,7 +209,7 @@ export function PlannerBoard() {
         const newTask = {
             title,
             plan_id: planId,
-            status: 'Todo',
+            status: 'Today',
             completed: false
         };
 

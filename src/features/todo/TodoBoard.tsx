@@ -85,6 +85,22 @@ export function TodoBoard() {
                     ...t,
                     tags: t.todo_tags.map((tt: any) => tt.tag).filter(Boolean)
                 }));
+
+                // Self-healing: Fix tasks with invalid status 'Todo' (from legacy Planner bug)
+                const invalidTasks = formattedTodos.filter((t: any) => t.status === 'Todo');
+                if (invalidTasks.length > 0) {
+                    console.log('Fixing invalid tasks:', invalidTasks);
+                    const invalidIds = invalidTasks.map((t: any) => t.id);
+                    // Update local state immediately
+                    formattedTodos.forEach((t: any) => {
+                        if (t.status === 'Todo') t.status = 'Backlogs';
+                    });
+                    // Background update DB
+                    supabase.from('todos').update({ status: 'Backlogs' }).in('id', invalidIds).then(({ error }) => {
+                        if (error) console.error('Failed to auto-fix invalid tasks', error);
+                    });
+                }
+
                 setTodos(formattedTodos as Todo[]);
             }
 
