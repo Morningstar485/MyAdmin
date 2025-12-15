@@ -20,7 +20,7 @@ export function NoteCard({ note, onClick, onDelete }: NoteCardProps) {
             )}
 
             <div
-                className="prose prose-invert prose-sm max-w-none text-slate-400 line-clamp-[8] pointer-events-none"
+                className="prose prose-invert prose-sm max-w-none text-slate-400 line-clamp-[8] pointer-events-none ProseMirror"
                 dangerouslySetInnerHTML={{ __html: note.content }}
             />
 
