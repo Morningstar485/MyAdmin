@@ -114,7 +114,15 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                         icon={<LogOut size={22} />}
                         label="Sign Out"
                         onClick={async () => {
-                            await supabase.auth.signOut();
+                            try {
+                                await supabase.auth.signOut();
+                            } catch (e) {
+                                console.error('Sign out failed', e);
+                            } finally {
+                                localStorage.clear(); // Always clear local state
+                                // Use Vite's BASE_URL to correctly redirect to the app root (e.g. /MyAdmin/)
+                                window.location.href = import.meta.env.BASE_URL;
+                            }
                         }}
                         collapsed={isCollapsed}
                     />
