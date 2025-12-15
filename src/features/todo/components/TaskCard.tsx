@@ -85,6 +85,11 @@ export function TaskCard({ todo, onToggle, isEditing, onDelete, onEdit, onClick 
                                 <span className="font-medium">{todo.duration}m</span>
                             </div>
                         )}
+                        {todo.plan && (
+                            <div className="flex items-center text-xs text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20 max-w-[120px]">
+                                <span className="font-medium truncate">{todo.plan.title}</span>
+                            </div>
+                        )}
                     </div>
 
                     {todo.tags && todo.tags.length > 0 && (

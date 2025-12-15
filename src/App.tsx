@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { AppShell } from './layouts/AppShell';
+import { AppShell, type View } from './layouts/AppShell';
 import { TodoBoard } from './features/todo/TodoBoard';
 import { NotesBoard } from './features/notes/NotesBoard';
 import { Dashboard } from './features/dashboard/Dashboard';
 import { SettingsBoard } from './features/settings/SettingsBoard';
-
-type View = 'tasks' | 'notes' | 'dashboard' | 'settings';
+import { PlannerBoard } from './features/planner/PlannerBoard';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>(() => {
@@ -18,12 +17,26 @@ function App() {
     localStorage.setItem('currentView', view);
   };
 
+  const renderContent = () => {
+    switch (currentView) {
+      case 'dashboard':
+        return <Dashboard />;
+      case 'planner':
+        return <PlannerBoard />;
+      case 'tasks':
+        return <TodoBoard />;
+      case 'notes':
+        return <NotesBoard />;
+      case 'settings':
+        return <SettingsBoard />;
+      default:
+        return <Dashboard />;
+    }
+  };
+
   return (
     <AppShell currentView={currentView} onNavigate={handleNavigate}>
-      {currentView === 'dashboard' && <Dashboard />}
-      {currentView === 'tasks' && <TodoBoard />}
-      {currentView === 'notes' && <NotesBoard />}
-      {currentView === 'settings' && <SettingsBoard />}
+      {renderContent()}
     </AppShell>
   )
 }

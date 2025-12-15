@@ -144,9 +144,9 @@ export function Dashboard() {
             {/* Key Metrics Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <StatCard
-                    title="Total Tasks"
-                    value={stats.totalTasks}
-                    subtitle={`${stats.pendingTasks} Pending`}
+                    title="Pending Tasks"
+                    value={stats.pendingTasks}
+                    subtitle={`Out of ${stats.totalTasks} Total`}
                     icon={Target}
                     color="text-indigo-400"
                 />
