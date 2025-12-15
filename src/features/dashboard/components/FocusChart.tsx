@@ -9,7 +9,7 @@ interface FocusData {
 
 export function FocusChart({ data }: { data: FocusData[] }) {
     return (
-        <div className="h-64 w-full">
+        <div className="w-full h-full min-h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                     <Pie

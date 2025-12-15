@@ -8,7 +8,7 @@ interface ActivityData {
 
 export function ActivityChart({ data }: { data: ActivityData[] }) {
     return (
-        <div className="h-64 w-full">
+        <div className="w-full h-full min-h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <XAxis

@@ -38,7 +38,7 @@ export function PlanDetailsModal({
         if (plan) {
             setDescription(plan.description || '');
         }
-    }, [plan]);
+    }, [plan?.id, plan?.description]);
 
     if (!plan) return null;
 
@@ -55,9 +55,27 @@ export function PlanDetailsModal({
             <div className="space-y-6">
                 {/* Header Stats */}
                 <div className="flex gap-4 flex-wrap">
-                    <div className="px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-sm font-medium flex items-center gap-2">
-                        <Target size={16} />
-                        {plan.status}
+                    <div className="relative">
+                        <select
+                            value={plan.status}
+                            onChange={(e) => onUpdatePlan(plan.id, { status: e.target.value as any })}
+                            className={`
+                                appearance-none pl-8 pr-8 py-1.5 rounded-lg border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer
+                                ${plan.status === 'Not Started' ? 'bg-slate-800 text-slate-300 border-slate-700' : ''}
+                                ${plan.status === 'Going On' ? 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20' : ''}
+                                ${plan.status === 'Stuck' ? 'bg-red-500/10 text-red-300 border-red-500/20' : ''}
+                                ${plan.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' : ''}
+                            `}
+                        >
+                            <option value="Not Started">Not Started</option>
+                            <option value="Going On">Going On</option>
+                            <option value="Stuck">Stuck</option>
+                            <option value="Completed">Completed</option>
+                        </select>
+                        <Target size={16} className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-70 pointer-events-none" />
+                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
+                            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m1 1 4 4 4-4" /></svg>
+                        </div>
                     </div>
                     <div className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 text-sm font-medium flex items-center gap-2">
                         <Clock size={16} />

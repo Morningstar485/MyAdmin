@@ -1,4 +1,4 @@
-import { Clock, CheckCircle, Trash2 } from 'lucide-react';
+import { CheckCircle, Trash2 } from 'lucide-react';
 import { type Plan } from '../../todo/types';
 
 interface PlanCardProps {
@@ -16,7 +16,7 @@ export function PlanCard({ plan, onClick, taskCount, completedCount, isEditing, 
     return (
         <div
             onClick={onClick}
-            className={`group bg-slate-800/40 border border-slate-700/50 hover:bg-slate-800/80 hover:border-slate-600 rounded-xl p-4 transition-all hover:shadow-lg cursor-pointer flex flex-col gap-3 mb-4 relative ${isEditing ? 'animate-pulse ring-1 ring-red-500/30' : ''}`}
+            className={`group bg-slate-800/40 border border-slate-700/50 hover:bg-slate-800/80 hover:border-slate-600 rounded-xl p-3 transition-all hover:shadow-lg cursor-pointer flex flex-col gap-2 mb-3 relative ${isEditing ? 'animate-pulse ring-1 ring-red-500/30' : ''}`}
         >
             {isEditing && (
                 <button
@@ -31,15 +31,12 @@ export function PlanCard({ plan, onClick, taskCount, completedCount, isEditing, 
             )}
 
             <div>
-                <h3 className="font-semibold text-slate-100 text-lg leading-tight mb-1">{plan.title}</h3>
-                {plan.description && (
-                    <p className="text-xs text-slate-500 line-clamp-2">{plan.description}</p>
-                )}
+                <h3 className="font-semibold text-slate-100 text-sm leading-tight">{plan.title}</h3>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-slate-400 mt-2">
+            <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
                 <div className="flex items-center gap-1.5">
-                    <CheckCircle size={14} className={progress === 100 ? "text-emerald-500" : "text-slate-500"} />
+                    <CheckCircle size={12} className={progress === 100 ? "text-emerald-500" : "text-slate-500"} />
                     <span>{completedCount}/{taskCount} Tasks</span>
                 </div>
             </div>

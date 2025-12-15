@@ -1,11 +1,27 @@
 import { useState, useEffect } from 'react';
-import { PageHeader } from '../../components/PageHeader';
 import { supabase } from '../../lib/supabase';
-import { Activity, CheckCircle, Clock, Target } from 'lucide-react';
-import { StatCard } from './components/StatCard';
+import { Activity, CheckCircle, Clock, Target, Calendar, ArrowUpRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { format } from 'date-fns';
 import { ActivityChart } from './components/ActivityChart';
 import { FocusChart } from './components/FocusChart';
 import type { Todo } from '../todo/types';
+
+// Animation Variants
+const container = {
+    hidden: { opacity: 0 },
+    show: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1
+        }
+    }
+};
+
+const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+};
 
 export function Dashboard() {
     const [stats, setStats] = useState({
@@ -17,50 +33,61 @@ export function Dashboard() {
     });
     const [activityData, setActivityData] = useState<any[]>([]);
     const [focusData, setFocusData] = useState<any[]>([]);
+    const [todaysTasks, setTodaysTasks] = useState<Todo[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // Live Clock
+    const [currentTime, setCurrentTime] = useState(new Date());
+
     useEffect(() => {
-        fetchDashboardData();
+        const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+        return () => clearInterval(timer);
     }, []);
 
-    async function fetchDashboardData() {
-        try {
-            // Fetch all todos
-            const { data: todosData, error } = await supabase
-                .from('todos')
-                .select(`
-                    *,
-                    todo_tags (
-                        tag:tags (*)
-                    )
-                `);
+    useEffect(() => {
+        async function fetchDashboardData() {
+            try {
+                const { data: todosData, error } = await supabase
+                    .from('todos')
+                    .select(`
+                        *,
+                        todo_tags (
+                            tag:tags (*)
+                        )
+                    `);
 
-            if (error) throw error;
+                if (error) throw error;
 
-            if (todosData) {
-                const todos = todosData.map((t: any) => ({
-                    ...t,
-                    tags: t.todo_tags.map((tt: any) => tt.tag).filter(Boolean)
-                })) as Todo[];
+                if (todosData) {
+                    const todos = todosData.map((t: any) => ({
+                        ...t,
+                        tags: t.todo_tags.map((tt: any) => tt.tag).filter(Boolean)
+                    })) as Todo[];
 
-                calculateStats(todos);
+                    calculateStats(todos);
+
+                    // Filter today's tasks
+                    // Assuming 'status' includes 'Today' or we check due date if it existed. 
+                    // For now, using the 'Today' status column convention from TodoBoard.
+                    const todayList = todos.filter(t => t.status === 'Today' && !t.completed);
+                    setTodaysTasks(todayList);
+                }
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
+            } finally {
+                setLoading(false);
             }
-        } catch (error) {
-            console.error('Error fetching dashboard data:', error);
-        } finally {
-            setLoading(false);
         }
-    }
+
+        fetchDashboardData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     function calculateStats(todos: Todo[]) {
-        // 1. Basic Stats
         const totalTasks = todos.length;
         const completedTasks = todos.filter(t => t.completed).length;
         const pendingTasks = totalTasks - completedTasks;
         const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
-        // Total Time (Estimated duration of all tasks)
-        // In minutes
         const totalMinutes = todos.reduce((acc, t) => acc + (t.duration || 0), 0);
         const totalHours = Math.round(totalMinutes / 60);
 
@@ -72,12 +99,7 @@ export function Dashboard() {
             pendingTasks
         });
 
-        // 2. Activity Data (Last 7 Days)
-        // Since we don't have a specific "completed_at" yet in the schema (oops, only created_at), 
-        // we'll approximate activity based on created_at for now to show the trend.
-        // For a real app, we should add 'completed_at'.
-        // Let's grouping created_at by day for the last 7 days.
-
+        // Activity Data (Simulated for now based on created_at as per previous logic)
         const last7Days = Array.from({ length: 7 }, (_, i) => {
             const d = new Date();
             d.setDate(d.getDate() - i);
@@ -85,37 +107,29 @@ export function Dashboard() {
         }).reverse();
 
         const activity = last7Days.map(date => {
-            const createdCount = todos.filter(t => t.created_at.startsWith(date)).length;
-            // Hack: Using created_at for completed too since we lack the field, 
-            // but strictly filtering by completed status. 
-            // Ideally we need a 'completed_at' column.
-            const completedCount = todos.filter(t => t.completed && t.created_at.startsWith(date)).length;
-
+            const created = todos.filter(t => t.created_at.startsWith(date)).length;
+            const completed = todos.filter(t => t.completed && t.created_at.startsWith(date)).length;
             return {
                 name: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
-                created: createdCount,
-                completed: completedCount
+                created,
+                completed
             };
         });
         setActivityData(activity);
 
-        // 3. Focus Distribution (By Tag)
-        // Group by tag name and sum up count
+        // Focus Data
         const tagMap = new Map<string, { count: number, color: string }>();
-
         todos.forEach(todo => {
             if (todo.tags && todo.tags.length > 0) {
                 todo.tags.forEach(tag => {
                     const current = tagMap.get(tag.name) || { count: 0, color: '' };
-                    // Map tailwind class to hex color for charts
-                    let hexColor = '#94a3b8'; // default slate-400
+                    let hexColor = '#94a3b8';
                     if (tag.color.includes('red')) hexColor = '#ef4444';
                     if (tag.color.includes('orange')) hexColor = '#f97316';
                     if (tag.color.includes('yellow')) hexColor = '#eab308';
                     if (tag.color.includes('green')) hexColor = '#22c55e';
                     if (tag.color.includes('blue')) hexColor = '#3b82f6';
                     if (tag.color.includes('purple')) hexColor = '#a855f7';
-
                     tagMap.set(tag.name, { count: current.count + 1, color: hexColor });
                 });
             } else {
@@ -124,66 +138,159 @@ export function Dashboard() {
             }
         });
 
-        const focus = Array.from(tagMap.entries()).map(([name, data]) => ({
+        setFocusData(Array.from(tagMap.entries()).map(([name, data]) => ({
             name,
             value: data.count,
             color: data.color
-        }));
-        setFocusData(focus);
+        })));
     }
 
-    if (loading) return <div className="p-6 text-slate-400">Loading Dashboard...</div>;
+    if (loading) return (
+        <div className="flex items-center justify-center h-full text-slate-400">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                Loading Dashboard...
+            </motion.div>
+        </div>
+    );
 
     return (
-        <div className="h-full flex flex-col px-6 pt-6 overflow-y-auto pb-20 scrollbar-thin scrollbar-thumb-slate-800">
-            <PageHeader
-                title="Dashboard"
-                description="Your productivity at a glance."
-            />
+        <div className="h-full flex flex-col p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800">
+            <motion.div
+                variants={container}
+                // initial="hidden" 
+                animate="show"
+                className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-6 max-w-7xl mx-auto w-full"
+            >
+                {/* 1. Greeting Card (Span 4) */}
+                <motion.div variants={item} className="col-span-1 md:col-span-4 lg:col-span-4 rounded-3xl p-8 backdrop-blur-xl bg-slate-900/60 border border-white/10 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-indigo-500/30 transition-all duration-700"></div>
 
-            {/* Key Metrics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div className="relative z-10 h-full flex flex-col justify-between">
+                        <div>
+                            <h1 className="text-4xl md:text-5xl font-light text-white tracking-tight mb-2">
+                                Good {currentTime.getHours() < 12 ? 'Morning' : currentTime.getHours() < 18 ? 'Afternoon' : 'Evening'}
+                            </h1>
+                            <p className="text-slate-400 text-lg">Ready to make an impact today?</p>
+                        </div>
+                        <div className="mt-8">
+                            <div className="text-6xl md:text-7xl font-bold text-white tracking-tighter tabular-nums">
+                                {format(currentTime, 'h:mm')}
+                                <span className="text-2xl md:text-3xl font-light text-slate-500 ml-2">{format(currentTime, 'a')}</span>
+                            </div>
+                            <div className="text-indigo-400 font-medium tracking-widest uppercase text-sm mt-2">
+                                {format(currentTime, 'EEEE, MMMM do')}
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
+
+                {/* 2. Quick Stats Cards (Span 2 each) */}
                 <StatCard
-                    title="Pending Tasks"
+                    label="Pending Tasks"
                     value={stats.pendingTasks}
-                    subtitle={`Out of ${stats.totalTasks} Total`}
                     icon={Target}
                     color="text-indigo-400"
+                    bg="bg-indigo-500/10"
+                    trend={`${stats.totalTasks} total`}
                 />
                 <StatCard
-                    title="Completion Rate"
+                    label="Productivity"
                     value={`${stats.completionRate}%`}
-                    subtitle="Keep it up!"
-                    icon={CheckCircle}
+                    icon={Activity}
                     color="text-emerald-400"
+                    bg="bg-emerald-500/10"
+                    trend="Completion rate"
                 />
+
+                {/* 3. Focus/Activity Chart (Span 4, Row 2) */}
+                <motion.div variants={item} className="col-span-1 md:col-span-4 lg:col-span-4 row-span-2 rounded-3xl p-1 backdrop-blur-xl bg-slate-900/60 border border-white/10 flex flex-col">
+                    <div className="p-6 pb-2 flex items-center justify-between">
+                        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Weekly Activity</h3>
+                        <div className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+                            <ArrowUpRight size={16} className="text-slate-400" />
+                        </div>
+                    </div>
+                    <div className="flex-1 w-full h-full min-h-[200px]">
+                        <ActivityChart data={activityData} />
+                    </div>
+                </motion.div>
+
+                {/* 4. Today's Agenda (Span 2, Row 2) */}
+                <motion.div variants={item} className="col-span-1 md:col-span-4 lg:col-span-2 row-span-2 rounded-3xl backdrop-blur-xl bg-slate-900/60 border border-white/10 flex flex-col overflow-hidden">
+                    <div className="p-6 border-b border-white/5 flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-orange-500/10 text-orange-400">
+                            <Calendar size={20} />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-bold text-slate-200 uppercase tracking-widest">Today's Agenda</h3>
+                            <p className="text-xs text-slate-500">{todaysTasks.length} tasks matching "Today"</p>
+                        </div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                        {todaysTasks.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center text-slate-500 text-center p-4">
+                                <CheckCircle size={32} className="mb-2 opacity-50" />
+                                <p className="text-sm">All caught up!</p>
+                            </div>
+                        ) : (
+                            todaysTasks.map(task => (
+                                <div key={task.id} className="group p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-all cursor-pointer flex items-center gap-3">
+                                    <div className={`w-1.5 h-1.5 rounded-full ${task.completed ? 'bg-emerald-500' : 'bg-orange-500'}`} />
+                                    <span className={`text-sm ${task.completed ? 'text-slate-500 line-through' : 'text-slate-200 group-hover:text-white'}`}>
+                                        {task.title}
+                                    </span>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </motion.div>
+
+                {/* 5. Focus Distribution (Span 2, Row 2) */}
+                <motion.div variants={item} className="col-span-1 md:col-span-4 lg:col-span-2 row-span-2 rounded-3xl p-6 backdrop-blur-xl bg-slate-900/60 border border-white/10 flex flex-col">
+                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Focus Areas</h3>
+                    <div className="flex-1">
+                        <FocusChart data={focusData} />
+                    </div>
+                </motion.div>
+
+                {/* 6. Extra Stats (Span 2) */}
                 <StatCard
-                    title="Focus Time"
+                    label="Focus Time"
                     value={`${stats.totalTime}h`}
-                    subtitle="Total Estimated"
                     icon={Clock}
                     color="text-blue-400"
+                    bg="bg-blue-500/10"
+                    trend="Estimated hours"
                 />
-                <StatCard
-                    title="Productivity Score"
-                    value={stats.completionRate > 80 ? 'A+' : stats.completionRate > 50 ? 'B' : 'C'}
-                    subtitle="Based on completion"
-                    icon={Activity}
-                    color="text-purple-400"
-                />
-            </div>
+                <motion.div variants={item} className="col-span-1 md:col-span-2 lg:col-span-2 rounded-3xl p-6 backdrop-blur-xl bg-slate-900/60 border border-white/10 flex items-center justify-between group cursor-pointer hover:bg-slate-800/60 transition-colors">
+                    <div>
+                        <p className="text-slate-500 text-xs uppercase tracking-widest font-bold mb-1">Status</p>
+                        <p className="text-2xl font-medium text-white group-hover:text-indigo-300 transition-colors">On Track</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                        <CheckCircle size={24} />
+                    </div>
+                </motion.div>
 
-            {/* Charts Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-white mb-6">Activity (Last 7 Days)</h3>
-                    <ActivityChart data={activityData} />
-                </div>
-                <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-white mb-6">Focus Distribution</h3>
-                    <FocusChart data={focusData} />
-                </div>
-            </div>
+            </motion.div>
         </div>
-    )
+    );
 }
+
+function StatCard({ label, value, icon: Icon, color, bg, trend }: { label: string, value: string | number, icon: any, color: string, bg: string, trend?: string }) {
+    return (
+        <motion.div variants={item} className="col-span-1 md:col-span-2 lg:col-span-2 rounded-3xl p-6 backdrop-blur-xl bg-slate-900/60 border border-white/10 flex flex-col justify-between group hover:border-white/20 transition-all">
+            <div className="flex items-start justify-between mb-4">
+                <div className={`p-3 rounded-2xl ${bg} ${color}`}>
+                    <Icon size={24} />
+                </div>
+                {trend && <span className="text-xs text-slate-500 font-medium bg-slate-800/50 px-2 py-1 rounded-full">{trend}</span>}
+            </div>
+            <div>
+                <p className="text-slate-400 text-xs uppercase tracking-widest font-bold mb-1 group-hover:text-slate-300 transition-colors">{label}</p>
+                <p className="text-3xl font-light text-white tracking-tight">{value}</p>
+            </div>
+        </motion.div>
+    );
+}
+

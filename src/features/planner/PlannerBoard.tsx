@@ -7,7 +7,6 @@ import {
     useSensor,
     useSensors,
     type DragStartEvent,
-    type DragOverEvent,
     type DragEndEvent,
     useDraggable,
     useDroppable,
@@ -41,12 +40,23 @@ export function PlannerBoard() {
     const [activeType, setActiveType] = useState<'plan' | 'task' | null>(null);
     const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
 
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.matchMedia('(max-width: 1024px)').matches);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: { distance: 5 },
+            disabled: isMobile
         }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
+            disabled: isMobile
         })
     );
 
@@ -121,7 +131,7 @@ export function PlannerBoard() {
         }
     }
 
-    function handleDragOver(event: DragOverEvent) {
+    function handleDragOver() {
         // Essential for sortable, but less critical for simple drop-on-target
     }
 
@@ -176,9 +186,8 @@ export function PlannerBoard() {
         }
     }
 
-    // For manual plan status moves (since full sortable list is heavy to implement in one go)
-    // Removed unused movePlan function
-    /* const movePlan = async (plan: Plan, newStatus: PlanStatus) => { ... } */
+    // Handle manual status change (e.g., from Dropdown)
+
 
     const handleUpdatePlan = async (planId: string, updates: Partial<Plan>) => {
         // Optimistic
@@ -541,12 +550,24 @@ function DroppableColumn({
         <div
             ref={setNodeRef}
             className={`
-                bg-slate-900/30 rounded-2xl p-4 flex flex-col h-full border transition-colors
-                ${isOver ? 'border-indigo-500/50 bg-indigo-500/10' : 'border-slate-800/50'}
+                flex-1 min-w-[300px] h-full flex flex-col rounded-xl px-2 py-4 border border-slate-800/50 bg-slate-900/30 backdrop-blur-sm transition-colors
+                ${isOver ? 'bg-slate-800/50 ring-2 ring-indigo-500/50' : ''}
             `}
         >
-            <h3 className="font-bold text-slate-400 mb-4 px-2">{col.title}</h3>
-            <div className="flex-1 space-y-3 overflow-y-auto custom-scrollbar">
+            <div className={`
+                flex items-center justify-between mb-4 px-2 py-2 rounded-lg border-b-2
+                ${col.status === 'Not Started' ? 'border-slate-500 text-slate-400' : ''}
+                ${col.status === 'Going On' ? 'border-indigo-500 text-indigo-400' : ''}
+                ${col.status === 'Stuck' ? 'border-red-500 text-red-400' : ''}
+                ${col.status === 'Completed' ? 'border-emerald-500 text-emerald-400' : ''}
+            `}>
+                <h3 className="font-bold text-sm uppercase tracking-wider">{col.title}</h3>
+                <span className="bg-slate-800 text-xs px-2 py-1 rounded-full text-slate-400 font-mono">
+                    {plans.filter(p => p.status === col.status).length}
+                </span>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar px-1">
                 {plans.filter(p => p.status === col.status).map(plan => {
                     const planTasks = allTasks.filter(t => t.plan_id === plan.id);
                     const completed = planTasks.filter(t => t.completed).length;
