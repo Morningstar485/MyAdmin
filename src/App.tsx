@@ -8,10 +8,18 @@ import { SettingsBoard } from './features/settings/SettingsBoard';
 type View = 'tasks' | 'notes' | 'dashboard' | 'settings';
 
 function App() {
-  const [currentView, setCurrentView] = useState<View>('dashboard');
+  const [currentView, setCurrentView] = useState<View>(() => {
+    const saved = localStorage.getItem('currentView');
+    return (saved as View) || 'dashboard';
+  });
+
+  const handleNavigate = (view: View) => {
+    setCurrentView(view);
+    localStorage.setItem('currentView', view);
+  };
 
   return (
-    <AppShell currentView={currentView} onNavigate={setCurrentView}>
+    <AppShell currentView={currentView} onNavigate={handleNavigate}>
       {currentView === 'dashboard' && <Dashboard />}
       {currentView === 'tasks' && <TodoBoard />}
       {currentView === 'notes' && <NotesBoard />}

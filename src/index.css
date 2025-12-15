@@ -25,30 +25,32 @@ input[type=number]::-webkit-outer-spin-button {
 
 input[type=number] {
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 /* TipTap / ProseMirror Content Styles */
 .ProseMirror ul {
   list-style-type: disc;
-  padding-left: 1.5em;
-  margin: 1em 0;
+  padding-left: 1.25em;
+  margin: 0.25em 0;
 }
 
 .ProseMirror ol {
   list-style-type: decimal;
-  padding-left: 1.5em;
-  margin: 1em 0;
+  padding-left: 1.25em;
+  margin: 0.25em 0;
 }
 
 .ProseMirror p {
-  margin-bottom: 0.5em;
+  margin-bottom: 0.15em;
+  line-height: 1.3;
 }
 
 .ProseMirror h1,
 .ProseMirror h2,
 .ProseMirror h3 {
-  margin-top: 1em;
-  margin-bottom: 0.5em;
+  margin-top: 0.5em;
+  margin-bottom: 0.15em;
   font-weight: 600;
 }
 
