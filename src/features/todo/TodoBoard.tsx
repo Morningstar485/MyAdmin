@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { PageHeader } from '../../components/PageHeader';
 import {
     DndContext,
     DragOverlay,
@@ -370,6 +371,11 @@ export function TodoBoard() {
 
     const activeTask = todos.find(t => t.id === activeId);
 
+    // Calculate Stats
+    const totalTasks = todos.length;
+    const completedTasks = todos.filter(t => t.completed).length;
+    const completionPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
     return (
         <DndContext
             sensors={sensors}
@@ -379,11 +385,15 @@ export function TodoBoard() {
             onDragEnd={handleDragEnd}
         >
             <div className="h-full flex flex-col px-6 pt-6 touch-none">
-                <header className="mb-8 flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold text-white mb-1">My Tasks</h1>
-                        <p className="text-slate-400">Manage your tasks efficiently.</p>
-                    </div>
+                <PageHeader
+                    title="My Tasks"
+                    description="Manage your tasks efficiently."
+                    progress={completionPercentage}
+                    stats={[
+                        { label: 'Total', value: totalTasks },
+                        { label: 'Completed', value: completedTasks }
+                    ]}
+                >
                     <div className="flex items-center space-x-3">
                         <button
                             onClick={handleFlush}
@@ -414,7 +424,7 @@ export function TodoBoard() {
                             + New Task
                         </button>
                     </div>
-                </header>
+                </PageHeader>
 
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 overflow-hidden">
                     {COLUMNS.map(col => (

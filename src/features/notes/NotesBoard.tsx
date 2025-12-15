@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { PageHeader } from '../../components/PageHeader';
 import { Plus, Search } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Note } from './types';
@@ -117,12 +118,11 @@ export function NotesBoard() {
 
     return (
         <div className="h-full flex flex-col px-6 pt-6 touch-none">
-            <header className="mb-8 flex items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold text-white mb-1">Notes</h1>
-                    <p className="text-slate-400">Capture your thoughts and ideas.</p>
-                </div>
-
+            <PageHeader
+                title="Notes"
+                description="Capture your thoughts and ideas."
+                stats={[{ label: 'Total Notes', value: notes.length }]}
+            >
                 <div className="flex items-center gap-3">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
@@ -143,7 +143,7 @@ export function NotesBoard() {
                         New Note
                     </button>
                 </div>
-            </header>
+            </PageHeader>
 
             <div className="flex-1 overflow-y-auto pb-20">
                 {filteredNotes.length === 0 ? (

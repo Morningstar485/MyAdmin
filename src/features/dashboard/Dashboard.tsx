@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { PageHeader } from '../../components/PageHeader';
 import { supabase } from '../../lib/supabase';
 import { Activity, CheckCircle, Clock, Target } from 'lucide-react';
 import { StatCard } from './components/StatCard';
@@ -135,10 +136,10 @@ export function Dashboard() {
 
     return (
         <div className="h-full flex flex-col px-6 pt-6 overflow-y-auto pb-20 scrollbar-thin scrollbar-thumb-slate-800">
-            <header className="mb-8">
-                <h1 className="text-3xl font-bold text-white mb-1">Dashboard</h1>
-                <p className="text-slate-400">Your productivity at a glance.</p>
-            </header>
+            <PageHeader
+                title="Dashboard"
+                description="Your productivity at a glance."
+            />
 
             {/* Key Metrics Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

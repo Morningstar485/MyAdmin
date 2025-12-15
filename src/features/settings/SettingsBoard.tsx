@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PageHeader } from '../../components/PageHeader';
 import { Trash2, AlertTriangle, Calendar, Save } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { CleanupModal } from './components/CleanupModal';
@@ -50,10 +51,10 @@ export function SettingsBoard() {
 
     return (
         <div className="h-full flex flex-col px-6 pt-6 touch-none overflow-y-auto pb-20">
-            <header className="mb-8">
-                <h1 className="text-3xl font-bold text-white mb-1">Settings</h1>
-                <p className="text-slate-400">Manage your application preferences.</p>
-            </header>
+            <PageHeader
+                title="Settings"
+                description="Manage your application preferences."
+            />
 
             <div className="max-w-2xl space-y-8">
                 {/* Data Management Section */}
