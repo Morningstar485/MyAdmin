@@ -15,8 +15,8 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
             {/* Sidebar - Simplified for "Website for eternity" */}
             <aside className="w-20 lg:w-64 border-r border-slate-800 flex flex-col py-6 bg-slate-900/50 backdrop-blur-xl">
                 <div className="px-4 mb-8 flex items-center justify-center lg:justify-start">
-                    <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg shadow-indigo-500/20">T</div>
-                    <span className="ml-3 font-bold text-xl hidden lg:block tracking-tight text-indigo-100">TasksMan</span>
+                    <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg shadow-indigo-500/20">M</div>
+                    <span className="ml-3 font-bold text-xl hidden lg:block tracking-tight text-indigo-100">MyAdmin</span>
                 </div>
 
                 <nav className="flex-1 space-y-2 px-3">
