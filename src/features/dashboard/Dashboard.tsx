@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { useGoogleCalendar } from '../../hooks/useGoogleCalendar';
 import { Activity, CheckCircle, Clock, Target, Calendar, ArrowUpRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
@@ -33,8 +34,8 @@ export function Dashboard() {
     });
     const [activityData, setActivityData] = useState<any[]>([]);
     const [focusData, setFocusData] = useState<any[]>([]);
-    const [todaysTasks, setTodaysTasks] = useState<Todo[]>([]);
     const [loading, setLoading] = useState(true);
+    const { events: calendarEvents, loading: calendarLoading } = useGoogleCalendar();
 
     // Live Clock
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -65,12 +66,6 @@ export function Dashboard() {
                     })) as Todo[];
 
                     calculateStats(todos);
-
-                    // Filter today's tasks
-                    // Assuming 'status' includes 'Today' or we check due date if it existed. 
-                    // For now, using the 'Today' status column convention from TodoBoard.
-                    const todayList = todos.filter(t => t.status === 'Today' && !t.completed);
-                    setTodaysTasks(todayList);
                 }
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
@@ -203,50 +198,59 @@ export function Dashboard() {
                 />
 
                 {/* 3. Focus/Activity Chart (Span 4, Row 2) */}
-                <motion.div variants={item} className="col-span-1 md:col-span-4 lg:col-span-4 row-span-2 rounded-3xl p-1 backdrop-blur-xl bg-slate-900/60 border border-white/10 flex flex-col">
+                <motion.div variants={item} className="col-span-1 md:col-span-4 lg:col-span-4 rounded-3xl p-1 backdrop-blur-xl bg-slate-900/60 border border-white/10 flex flex-col h-[320px]">
                     <div className="p-6 pb-2 flex items-center justify-between">
                         <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Weekly Activity</h3>
                         <div className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
                             <ArrowUpRight size={16} className="text-slate-400" />
                         </div>
                     </div>
-                    <div className="flex-1 w-full h-full min-h-[200px]">
+                    <div className="flex-1 w-full h-full min-h-0">
                         <ActivityChart data={activityData} />
                     </div>
                 </motion.div>
 
-                {/* 4. Today's Agenda (Span 2, Row 2) */}
-                <motion.div variants={item} className="col-span-1 md:col-span-4 lg:col-span-2 row-span-2 rounded-3xl backdrop-blur-xl bg-slate-900/60 border border-white/10 flex flex-col overflow-hidden">
+                {/* 4. Google Calendar (Span 2, Row 2) */}
+                <motion.div variants={item} className="col-span-1 md:col-span-4 lg:col-span-2 rounded-3xl backdrop-blur-xl bg-slate-900/60 border border-white/10 flex flex-col overflow-hidden h-[320px]">
                     <div className="p-6 border-b border-white/5 flex items-center gap-3">
                         <div className="p-2 rounded-lg bg-orange-500/10 text-orange-400">
                             <Calendar size={20} />
                         </div>
                         <div>
-                            <h3 className="text-sm font-bold text-slate-200 uppercase tracking-widest">Today's Agenda</h3>
-                            <p className="text-xs text-slate-500">{todaysTasks.length} tasks matching "Today"</p>
+                            <h3 className="text-sm font-bold text-slate-200 uppercase tracking-widest">Upcoming Events</h3>
+                            <p className="text-xs text-slate-500">{calendarEvents.length} upcoming events</p>
                         </div>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-                        {todaysTasks.length === 0 ? (
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                        {calendarLoading ? (
+                            <div className="h-full flex items-center justify-center text-slate-500 text-sm">Loading calendar...</div>
+                        ) : calendarEvents.length === 0 ? (
                             <div className="h-full flex flex-col items-center justify-center text-slate-500 text-center p-4">
                                 <CheckCircle size={32} className="mb-2 opacity-50" />
-                                <p className="text-sm">All caught up!</p>
+                                <p className="text-sm">No upcoming events!</p>
                             </div>
                         ) : (
-                            todaysTasks.map(task => (
-                                <div key={task.id} className="group p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-all cursor-pointer flex items-center gap-3">
-                                    <div className={`w-1.5 h-1.5 rounded-full ${task.completed ? 'bg-emerald-500' : 'bg-orange-500'}`} />
-                                    <span className={`text-sm ${task.completed ? 'text-slate-500 line-through' : 'text-slate-200 group-hover:text-white'}`}>
-                                        {task.title}
-                                    </span>
-                                </div>
-                            ))
+                            calendarEvents.map(event => {
+                                const start = event.start.dateTime ? new Date(event.start.dateTime) : (event.start.date ? new Date(event.start.date) : null);
+                                const timeStr = start ? format(start, 'MMM d, h:mm a') : 'All Day';
+
+                                return (
+                                    <div key={event.id} className="group p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-all cursor-pointer flex flex-col gap-1">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">{timeStr}</span>
+                                        </div>
+                                        <span className="text-sm font-medium text-slate-200 group-hover:text-white">
+                                            {event.summary}
+                                        </span>
+                                    </div>
+                                )
+                            })
                         )}
                     </div>
                 </motion.div>
 
                 {/* 5. Focus Distribution (Span 2, Row 2) */}
-                <motion.div variants={item} className="col-span-1 md:col-span-4 lg:col-span-2 row-span-2 rounded-3xl p-6 backdrop-blur-xl bg-slate-900/60 border border-white/10 flex flex-col">
+                <motion.div variants={item} className="col-span-1 md:col-span-4 lg:col-span-2 rounded-3xl p-6 backdrop-blur-xl bg-slate-900/60 border border-white/10 flex flex-col h-[320px]">
                     <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Focus Areas</h3>
                     <div className="flex-1">
                         <FocusChart data={focusData} />

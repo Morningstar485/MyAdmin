@@ -6,7 +6,12 @@ export function LoginScreen() {
         await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: window.location.href
+                redirectTo: window.location.href,
+                queryParams: {
+                    access_type: 'offline',
+                    prompt: 'consent',
+                    scope: 'email profile https://www.googleapis.com/auth/calendar.readonly'
+                }
             }
         });
     };

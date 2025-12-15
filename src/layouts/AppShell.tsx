@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { LayoutDashboard, CheckSquare, FileText, Settings, Calendar, Menu } from 'lucide-react';
+import { useState } from 'react';
+import { LayoutDashboard, CheckSquare, FileText, Settings, Calendar, Menu, LogOut } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export type View = 'tasks' | 'notes' | 'dashboard' | 'settings' | 'planner';
 
@@ -100,12 +101,22 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                     />
                 </nav>
 
-                <div className="px-3 mt-auto">
+                <div className="px-3 mt-auto space-y-2">
                     <NavItem
                         icon={<Settings size={22} />}
                         label="Settings"
                         active={currentView === 'settings'}
                         onClick={() => { onNavigate('settings'); setIsMobileOpen(false); }}
+                        collapsed={isCollapsed}
+                    />
+                    <div className="h-px bg-slate-800 mx-1 my-2" />
+                    <NavItem
+                        icon={<LogOut size={22} />}
+                        label="Sign Out"
+                        onClick={async () => {
+                            await supabase.auth.signOut();
+                            window.location.reload(); // Force refresh to trigger auth check
+                        }}
                         collapsed={isCollapsed}
                     />
                 </div>
