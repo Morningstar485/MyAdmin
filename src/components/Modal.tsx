@@ -23,10 +23,10 @@ export function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-md' 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
             <div
-                className={`bg-slate-900 border border-slate-700/50 rounded-2xl w-full ${maxWidth} shadow-2xl shadow-black/50 overflow-hidden animate-in zoom-in-95 duration-200`}
+                className={`bg-slate-900 border border-slate-700/50 rounded-2xl w-full ${maxWidth} max-h-[90vh] flex flex-col shadow-2xl shadow-black/50 overflow-hidden animate-in zoom-in-95 duration-200`}
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="flex items-center justify-between p-4 border-b border-slate-800">
+                <div className="flex items-center justify-between p-4 border-b border-slate-800 shrink-0">
                     <h2 className="text-lg font-semibold text-white">{title}</h2>
                     <button
                         onClick={onClose}
@@ -35,7 +35,7 @@ export function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-md' 
                         <X size={20} />
                     </button>
                 </div>
-                <div className="p-6">
+                <div className="p-6 overflow-y-auto">
                     {children}
                 </div>
             </div>

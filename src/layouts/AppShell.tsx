@@ -10,28 +10,61 @@ interface AppShellProps {
 }
 
 export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(false); // Desktop Mini
+    const [isMobileOpen, setIsMobileOpen] = useState(false); // Mobile Drawer
 
     return (
-        <div className="flex h-screen bg-slate-950 text-slate-100 font-sans">
+        <div className="flex h-screen bg-slate-950 text-slate-100 font-sans overflow-hidden">
+
+            {/* Mobile Header (Visible only on mobile) */}
+            <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 flex items-center px-4 z-30">
+                <button
+                    onClick={() => setIsMobileOpen(true)}
+                    className="p-2 -ml-2 text-slate-400 hover:text-white"
+                >
+                    <Menu size={24} />
+                </button>
+                <span className="ml-3 font-bold text-lg text-indigo-100">MyAdmin</span>
+            </div>
+
+            {/* Mobile Overlay */}
+            {isMobileOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
+                    onClick={() => setIsMobileOpen(false)}
+                />
+            )}
+
             {/* Sidebar */}
             <aside
                 className={`
-                    ${isCollapsed ? 'w-20' : 'w-20 lg:w-64'}
-                    border-r border-slate-800 flex flex-col py-6 bg-slate-900/50 backdrop-blur-xl transition-all duration-300 ease-in-out relative z-20
+                    fixed inset-y-0 left-0 z-50 bg-slate-900 border-r border-slate-800 flex flex-col py-6 transition-transform duration-300 ease-in-out
+                    lg:static lg:bg-slate-900/50 lg:backdrop-blur-xl lg:z-20
+                    ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+                    ${isCollapsed ? 'lg:w-20' : 'lg:w-64'}
+                    w-64 shadow-2xl lg:shadow-none
                 `}
             >
+                {/* Desktop Collapse Toggle */}
                 <button
                     onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="absolute -right-3 top-8 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full p-1.5 shadow-lg shadow-indigo-500/30 z-50 transition-colors border-2 border-slate-950"
+                    className="hidden lg:flex absolute -right-3 top-8 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full p-1.5 shadow-lg shadow-indigo-500/30 z-50 transition-colors border-2 border-slate-950 items-center justify-center"
                     title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
                 >
                     <Menu size={16} />
                 </button>
 
-                <div className={`px-4 mb-8 flex items-center ${isCollapsed ? 'justify-center' : 'justify-center lg:justify-start'} `}>
+                {/* Mobile Close Button (Optional, can just click overlay) */}
+                <button
+                    onClick={() => setIsMobileOpen(false)}
+                    className="lg:hidden absolute top-4 right-4 text-slate-500 hover:text-white"
+                >
+                    <Menu size={20} className="rotate-90" /> {/* Or X icon */}
+                </button>
+
+                <div className={`px-4 mb-8 flex items-center ${isCollapsed ? 'lg:justify-center' : ''}`}>
                     <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg shadow-indigo-500/20 shrink-0">M</div>
-                    <span className={`ml-3 font-bold text-xl tracking-tight text-indigo-100 overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0 hidden' : 'w-auto opacity-100 hidden lg:block'} `}>
+                    <span className={`ml-3 font-bold text-xl tracking-tight text-indigo-100 overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:w-0 lg:opacity-0 lg:hidden' : 'w-auto opacity-100'}`}>
                         MyAdmin
                     </span>
                 </div>
@@ -41,28 +74,28 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                         icon={<LayoutDashboard size={22} />}
                         label="Dashboard"
                         active={currentView === 'dashboard'}
-                        onClick={() => onNavigate('dashboard')}
+                        onClick={() => { onNavigate('dashboard'); setIsMobileOpen(false); }}
                         collapsed={isCollapsed}
                     />
                     <NavItem
                         icon={<Calendar size={22} />}
                         label="Planner"
                         active={currentView === 'planner'}
-                        onClick={() => onNavigate('planner')}
+                        onClick={() => { onNavigate('planner'); setIsMobileOpen(false); }}
                         collapsed={isCollapsed}
                     />
                     <NavItem
                         icon={<CheckSquare size={22} />}
                         label="Tasks"
                         active={currentView === 'tasks'}
-                        onClick={() => onNavigate('tasks')}
+                        onClick={() => { onNavigate('tasks'); setIsMobileOpen(false); }}
                         collapsed={isCollapsed}
                     />
                     <NavItem
                         icon={<FileText size={22} />}
                         label="Notes"
                         active={currentView === 'notes'}
-                        onClick={() => onNavigate('notes')}
+                        onClick={() => { onNavigate('notes'); setIsMobileOpen(false); }}
                         collapsed={isCollapsed}
                     />
                 </nav>
@@ -72,13 +105,14 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                         icon={<Settings size={22} />}
                         label="Settings"
                         active={currentView === 'settings'}
-                        onClick={() => onNavigate('settings')}
+                        onClick={() => { onNavigate('settings'); setIsMobileOpen(false); }}
                         collapsed={isCollapsed}
                     />
                 </div>
             </aside>
 
-            <main className="flex-1 overflow-hidden relative bg-slate-950">
+            {/* Main Content */}
+            <main className="flex-1 overflow-hidden relative bg-slate-950 pt-16 lg:pt-0">
                 {children}
             </main>
         </div>
@@ -102,7 +136,7 @@ function NavItem({ icon, label, active, onClick, collapsed }: { icon: React.Reac
             <span className={`${active ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'} shrink-0`}>
                 {icon}
             </span>
-            <span className={`ml-3 text-sm font-medium overflow-hidden whitespace-nowrap transition-all duration-300 ${collapsed ? 'w-0 opacity-0 hidden' : 'w-auto opacity-100 hidden lg:block'} `}>
+            <span className={`ml-3 text-sm font-medium overflow-hidden whitespace-nowrap transition-all duration-300 ${collapsed ? 'lg:w-0 lg:opacity-0 lg:hidden' : 'w-auto opacity-100'} `}>
                 {label}
             </span>
         </button>

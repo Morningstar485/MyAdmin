@@ -410,10 +410,10 @@ export function TodoBoard() {
                         { label: 'Completed', value: completedTasks }
                     ]}
                 >
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center gap-2 lg:gap-3 flex-wrap justify-end">
                         <button
                             onClick={handleFlush}
-                            className="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20"
+                            className="px-3 py-2 lg:px-4 rounded-lg text-sm font-medium transition-all bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20"
                             title="Delete all completed tasks"
                         >
                             <Trash2 size={18} />
@@ -422,7 +422,7 @@ export function TodoBoard() {
                         <button
                             onClick={() => setIsEditMode(!isEditMode)}
                             className={`
-                                px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-lg flex items-center gap-2
+                                px-3 py-2 lg:px-4 rounded-lg text-sm font-medium transition-all shadow-lg flex items-center gap-2
                                 ${isEditMode
                                     ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-orange-500/20'
                                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
@@ -435,14 +435,14 @@ export function TodoBoard() {
 
                         <button
                             onClick={() => setIsModalOpen(true)}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-600/20 active:scale-95"
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 lg:px-4 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-600/20 active:scale-95 whitespace-nowrap"
                         >
                             + New Task
                         </button>
                     </div>
                 </PageHeader>
 
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 overflow-hidden">
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 overflow-y-auto lg:overflow-hidden pb-20 lg:pb-0">
                     {COLUMNS.map(col => (
                         <TodoColumn
                             key={col.status}

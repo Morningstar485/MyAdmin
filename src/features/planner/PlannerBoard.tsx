@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import {
     DndContext,
     DragOverlay,
-    closestCorners,
     KeyboardSensor,
     PointerSensor,
     useSensor,
@@ -13,7 +12,7 @@ import {
     useDraggable,
     useDroppable,
 } from '@dnd-kit/core';
-import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { PageHeader } from '../../components/PageHeader';
 import { supabase } from '../../lib/supabase';
 import { type Plan, type PlanStatus, type Todo } from '../todo/types';
@@ -178,10 +177,8 @@ export function PlannerBoard() {
     }
 
     // For manual plan status moves (since full sortable list is heavy to implement in one go)
-    const movePlan = async (plan: Plan, newStatus: PlanStatus) => {
-        setPlans(prev => prev.map(p => p.id === plan.id ? { ...p, status: newStatus } : p));
-        await supabase.from('plans').update({ status: newStatus }).eq('id', plan.id);
-    };
+    // Removed unused movePlan function
+    /* const movePlan = async (plan: Plan, newStatus: PlanStatus) => { ... } */
 
     const handleUpdatePlan = async (planId: string, updates: Partial<Plan>) => {
         // Optimistic
@@ -337,7 +334,7 @@ export function PlannerBoard() {
                     title="Planner"
                     description="Manage major projects and allocate tasks."
                 >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 lg:gap-3 flex-wrap justify-end">
                         <div className="flex items-center bg-slate-800/50 rounded-lg p-1 border border-slate-700/50 mr-2">
                             <button
                                 onClick={() => setIsEditing(!isEditing)}
@@ -358,7 +355,7 @@ export function PlannerBoard() {
                         <button
                             onClick={() => setIsUnallocatedOpen(!isUnallocatedOpen)}
                             className={`
-                                px-4 py-2 rounded-lg text-sm font-medium transition-colors border flex items-center gap-2
+                                px-3 py-2 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm font-medium transition-colors border flex items-center gap-2
                                 ${isUnallocatedOpen
                                     ? 'bg-slate-700 text-white border-slate-600'
                                     : 'bg-slate-800/50 text-slate-300 border-slate-700/50 hover:bg-slate-800 hover:text-white'
@@ -366,21 +363,23 @@ export function PlannerBoard() {
                             `}
                         >
                             <span className="bg-indigo-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{unallocatedTasks.length}</span>
-                            Miscellaneous Tasks
+                            <span className="hidden sm:inline">Miscellaneous Tasks</span>
+                            <span className="sm:hidden">Tasks</span>
                         </button>
                         <button
                             onClick={() => setIsCreateModalOpen(true)}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-600/20 active:scale-95 flex items-center gap-2"
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm font-medium transition-colors shadow-lg shadow-indigo-600/20 active:scale-95 flex items-center gap-2"
                         >
-                            <Plus size={18} />
-                            New Plan
+                            <Plus size={16} />
+                            <span className="hidden sm:inline">New Plan</span>
+                            <span className="sm:hidden">New</span>
                         </button>
                     </div>
                 </PageHeader>
 
-                <div className="flex-1 overflow-x-auto pb-6 relative">
-                    {/* Main Board: Planner Columns - Now Full Width */}
-                    <div className="h-full grid grid-cols-4 gap-4 min-w-[1000px]">
+                <div className="flex-1 overflow-x-hidden overflow-y-auto lg:overflow-x-auto lg:overflow-y-hidden pb-6 relative">
+                    {/* Main Board: Planner Columns */}
+                    <div className="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:min-w-[1000px] min-w-full pb-20 lg:pb-0">
                         {PLAN_COLUMNS.map(col => (
                             <DroppableColumn
                                 key={col.status}
@@ -396,14 +395,20 @@ export function PlannerBoard() {
 
                     {/* Floating Sidebar: Miscellaneous Tasks */}
                     {isUnallocatedOpen && (
-                        <div className="absolute top-0 right-0 bottom-6 w-80 bg-slate-900 border border-slate-700 rounded-2xl flex flex-col shadow-2xl z-20">
-                            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+                        <div className={`
+                            bg-slate-900 border-slate-700 flex flex-col shadow-2xl z-40
+                            fixed inset-0 lg:absolute lg:top-0 lg:right-0 lg:bottom-6 lg:w-80 lg:border lg:rounded-2xl
+                        `}>
+                            <div className="p-4 border-b border-slate-800 flex items-center justify-between safe-top">
                                 <div>
                                     <h3 className="font-bold text-slate-200">Miscellaneous Tasks</h3>
                                     <p className="text-xs text-slate-500">Drag to a plan</p>
                                 </div>
-                                <button onClick={() => setIsUnallocatedOpen(false)} className="text-slate-500 hover:text-white">
-                                    ✕
+                                <button
+                                    onClick={() => setIsUnallocatedOpen(false)}
+                                    className="p-2 -mr-2 text-slate-500 hover:text-white"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
                                 </button>
                             </div>
                             <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-900/50">
