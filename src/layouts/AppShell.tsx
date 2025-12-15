@@ -115,7 +115,6 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                         label="Sign Out"
                         onClick={async () => {
                             await supabase.auth.signOut();
-                            window.location.reload(); // Force refresh to trigger auth check
                         }}
                         collapsed={isCollapsed}
                     />
