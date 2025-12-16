@@ -388,7 +388,7 @@ export function PlannerBoard() {
 
                 <div className="flex-1 overflow-x-hidden overflow-y-auto lg:overflow-x-auto lg:overflow-y-hidden pb-6 relative">
                     {/* Main Board: Planner Columns */}
-                    <div className="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:min-w-[1000px] min-w-full pb-20 lg:pb-0">
+                    <div className="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:min-w-[800px] min-w-full pb-20 lg:pb-0">
                         {PLAN_COLUMNS.map(col => (
                             <DroppableColumn
                                 key={col.status}
@@ -550,7 +550,7 @@ function DroppableColumn({
         <div
             ref={setNodeRef}
             className={`
-                flex-1 min-w-[300px] h-full flex flex-col rounded-xl px-2 py-4 border border-slate-800/50 bg-slate-900/30 backdrop-blur-sm transition-colors
+                flex-1 min-w-[250px] h-full flex flex-col rounded-xl px-2 py-4 border border-slate-800/50 bg-slate-900/30 backdrop-blur-sm transition-colors
                 ${isOver ? 'bg-slate-800/50 ring-2 ring-indigo-500/50' : ''}
             `}
         >

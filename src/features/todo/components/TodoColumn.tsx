@@ -36,7 +36,7 @@ export function TodoColumn({ title, status, todos, onToggle, isEditing, onDelete
                 <SortableContext items={todoIds} strategy={verticalListSortingStrategy}>
                     <div
                         ref={setNodeRef}
-                        className="overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent max-h-[calc(100vh-250px)] min-h-[100px]"
+                        className="overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent max-h-[calc(100vh-250px)] min-h-[100px]"
                     >
                         {todos.map(todo => (
                             <SortableTaskItem
