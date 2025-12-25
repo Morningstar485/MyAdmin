@@ -8,14 +8,17 @@ import { SettingsBoard } from './features/settings/SettingsBoard';
 import { PlannerBoard } from './features/planner/PlannerBoard';
 import { LoginScreen } from './components/LoginScreen';
 import type { Session } from '@supabase/supabase-js';
+import { NavigationProvider, useNavigation } from './contexts/NavigationContext';
 
-function App() {
+function AppContent() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<View>(() => {
     const saved = localStorage.getItem('currentView');
     return (saved as View) || 'dashboard';
   });
+
+  const { confirmNavigation } = useNavigation();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -33,8 +36,10 @@ function App() {
   }, []);
 
   const handleNavigate = (view: View) => {
-    setCurrentView(view);
-    localStorage.setItem('currentView', view);
+    confirmNavigation(() => {
+      setCurrentView(view);
+      localStorage.setItem('currentView', view);
+    });
   };
 
   const renderContent = () => {
@@ -66,7 +71,15 @@ function App() {
     <AppShell currentView={currentView} onNavigate={handleNavigate}>
       {renderContent()}
     </AppShell>
-  )
+  );
 }
 
-export default App
+function App() {
+  return (
+    <NavigationProvider>
+      <AppContent />
+    </NavigationProvider>
+  );
+}
+
+export default App;

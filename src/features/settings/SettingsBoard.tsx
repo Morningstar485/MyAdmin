@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { PageHeader } from '../../components/PageHeader';
-import { Trash2, AlertTriangle, Calendar, Save } from 'lucide-react';
+import { Trash2, AlertTriangle, Calendar, Save, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { CleanupModal } from './components/CleanupModal';
 import { TagsManager } from './components/TagsManager';
-import { ColumnManager } from './components/ColumnManager';
-import { PlanColumnManager } from './components/PlanColumnManager';
+import { ColumnManager, type ColumnManagerHandle } from './components/ColumnManager';
+import { PlanColumnManager, type PlanColumnManagerHandle } from './components/PlanColumnManager';
+import { useNavigation } from '../../contexts/NavigationContext';
 
 export function SettingsBoard() {
     // Calculate default date (e.g., 30 days ago) for suggestion
@@ -18,6 +19,69 @@ export function SettingsBoard() {
     const [retentionDate, setRetentionDate] = useState(getDefaultDate());
     const [isDeleting, setIsDeleting] = useState(false);
     const [isCleanupModalOpen, setIsCleanupModalOpen] = useState(false);
+
+    // Save / Dirty State Management
+    const [dirtyComponents, setDirtyComponents] = useState<Set<string>>(new Set());
+    const [isSaving, setIsSaving] = useState(false);
+    const { setBlocker } = useNavigation();
+
+    const columnManagerRef = useRef<ColumnManagerHandle>(null);
+    const planColumnManagerRef = useRef<PlanColumnManagerHandle>(null);
+
+    const hasUnsavedChanges = dirtyComponents.size > 0;
+
+    // Register Navigation Blocker
+    useEffect(() => {
+        if (hasUnsavedChanges) {
+            setBlocker(() => true);
+        } else {
+            setBlocker(null);
+        }
+        return () => setBlocker(null);
+    }, [hasUnsavedChanges, setBlocker]);
+
+    const handleDirtyChange = (id: string, isDirty: boolean) => {
+        setDirtyComponents(prev => {
+            const next = new Set(prev);
+            if (isDirty) next.add(id);
+            else next.delete(id);
+            return next;
+        });
+    };
+
+    const handleSaveAll = async () => {
+        if (isSaving) return;
+        setIsSaving(true);
+        try {
+            const promises = [];
+            if (dirtyComponents.has('columns') && columnManagerRef.current) {
+                promises.push(columnManagerRef.current.save());
+            }
+            if (dirtyComponents.has('plans') && planColumnManagerRef.current) {
+                promises.push(planColumnManagerRef.current.save());
+            }
+            // Add tags manager if needed later
+
+            await Promise.all(promises);
+
+            setDirtyComponents(new Set());
+            alert('Settings saved successfully!');
+        } catch (error) {
+            console.error('Failed to save settings:', error);
+            alert('Failed to save some settings.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDiscard = () => {
+        if (!window.confirm("Discard all unsaved changes?")) return;
+
+        if (columnManagerRef.current) columnManagerRef.current.reset();
+        if (planColumnManagerRef.current) planColumnManagerRef.current.reset();
+
+        setDirtyComponents(new Set());
+    };
 
     const handleCleanupClick = () => {
         if (!retentionDate) {
@@ -52,13 +116,13 @@ export function SettingsBoard() {
     };
 
     return (
-        <div className="h-full flex flex-col px-6 pt-6 touch-none overflow-y-auto pb-20">
+        <div className="h-full flex flex-col px-6 pt-6 touch-none overflow-y-auto pb-20 relative">
             <PageHeader
                 title="Settings"
                 description="Manage your application preferences."
             />
 
-            <div className="max-w-2xl space-y-8">
+            <div className="max-w-2xl space-y-8 pb-24">
                 {/* Data Management Section */}
                 <section className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-6">
                     <div className="flex items-start gap-4">
@@ -103,10 +167,16 @@ export function SettingsBoard() {
                 </section>
 
                 {/* Task Sections Manager */}
-                <ColumnManager />
+                <ColumnManager
+                    ref={columnManagerRef}
+                    onDirtyChange={(d) => handleDirtyChange('columns', d)}
+                />
 
                 {/* Planner Sections Manager */}
-                <PlanColumnManager />
+                <PlanColumnManager
+                    ref={planColumnManagerRef}
+                    onDirtyChange={(d) => handleDirtyChange('plans', d)}
+                />
 
                 {/* Tags Manager */}
                 <TagsManager />
@@ -123,6 +193,34 @@ export function SettingsBoard() {
                         </div>
                     </div>
                 </section>
+            </div>
+
+            {/* Floating Save Actions */}
+            <div className={`
+                fixed bottom-6 right-6 flex items-center gap-3 transition-all duration-300 transform
+                ${hasUnsavedChanges ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}
+            `}>
+                <button
+                    onClick={handleDiscard}
+                    className="px-4 py-3 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white rounded-full shadow-lg border border-slate-700 font-medium flex items-center gap-2"
+                >
+                    <X size={20} />
+                    Discard
+                </button>
+                <button
+                    onClick={handleSaveAll}
+                    disabled={isSaving}
+                    className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full shadow-xl shadow-indigo-600/30 font-bold flex items-center gap-2 transition-transform active:scale-95"
+                >
+                    {isSaving ? (
+                        <>Saving...</>
+                    ) : (
+                        <>
+                            <Save size={20} />
+                            Save Changes
+                        </>
+                    )}
+                </button>
             </div>
 
             <CleanupModal

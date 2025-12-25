@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { supabase } from '../../../lib/supabase';
 import type { PlanColumn } from '../../todo/types';
 import { Trash2, Plus, GripVertical, AlertCircle } from 'lucide-react';
@@ -56,11 +56,21 @@ function SortableItem({ id, column, onDelete }: { id: string, column: PlanColumn
     );
 }
 
-export function PlanColumnManager() {
+export interface PlanColumnManagerHandle {
+    save: () => Promise<void>;
+    reset: () => void;
+}
+
+interface PlanColumnManagerProps {
+    onDirtyChange: (isDirty: boolean) => void;
+}
+
+export const PlanColumnManager = forwardRef<PlanColumnManagerHandle, PlanColumnManagerProps>(({ onDirtyChange }, ref) => {
+    const [originalColumns, setOriginalColumns] = useState<PlanColumn[]>([]);
     const [columns, setColumns] = useState<PlanColumn[]>([]);
+    const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
     const [isLoading, setIsLoading] = useState(true);
     const [newColumnTitle, setNewColumnTitle] = useState('');
-    const [isCreating, setIsCreating] = useState(false);
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -73,15 +83,36 @@ export function PlanColumnManager() {
         fetchColumns();
     }, []);
 
+    // Check dirty state
+    useEffect(() => {
+        const isDirty =
+            columns.length !== originalColumns.length ||
+            deletedIds.size > 0 ||
+            JSON.stringify(columns.map(c => c.id)) !== JSON.stringify(originalColumns.map(c => c.id)) ||
+            columns.some(c => c.id.startsWith('temp-'));
+
+        onDirtyChange(isDirty);
+    }, [columns, originalColumns, deletedIds, onDirtyChange]);
+
     const fetchColumns = async () => {
+        setIsLoading(true);
         try {
+            // 1. Try to initialize defaults
+            const { error: rpcError } = await supabase.rpc('initialize_default_plan_columns');
+            if (rpcError) console.error('Error initializing plan columns:', rpcError);
+
+            // 2. Fetch columns
             const { data, error } = await supabase
                 .from('plan_columns')
                 .select('*')
                 .order('position');
 
             if (error) throw error;
-            setColumns(data || []);
+            const loaded = data || [];
+            setOriginalColumns(loaded);
+            setColumns(loaded);
+            setDeletedIds(new Set());
+            onDirtyChange(false);
         } catch (error) {
             console.error('Error fetching plan columns:', error);
         } finally {
@@ -89,90 +120,94 @@ export function PlanColumnManager() {
         }
     };
 
+    useImperativeHandle(ref, () => ({
+        save: async () => {
+            // 1. Handle Deletes
+            if (deletedIds.size > 0) {
+                const realIdsToDelete = Array.from(deletedIds).filter(id => !id.startsWith('temp-'));
+                if (realIdsToDelete.length > 0) {
+                    const { error } = await supabase.from('plan_columns').delete().in('id', realIdsToDelete);
+                    if (error) throw error;
+                }
+            }
+
+            // 2. Handle Upserts
+            const upserts = columns.map((col, index) => {
+                const isTemp = col.id.startsWith('temp-');
+                return {
+                    id: isTemp ? undefined : col.id,
+                    title: col.title,
+                    position: index,
+                };
+            });
+
+            const existingItems = upserts.filter(u => u.id);
+            const newItems = upserts.filter(u => !u.id);
+
+            if (existingItems.length > 0) {
+                const { error: updateError } = await supabase.from('plan_columns').upsert(existingItems);
+                if (updateError) throw updateError;
+            }
+
+            if (newItems.length > 0) {
+                const { error: insertError } = await supabase.from('plan_columns').insert(newItems);
+                if (insertError) throw insertError;
+            }
+
+            await fetchColumns();
+        },
+        reset: () => {
+            setColumns(originalColumns);
+            setDeletedIds(new Set());
+        }
+    }));
+
     const handleAddColumn = async () => {
         if (!newColumnTitle.trim()) return;
-        setIsCreating(true);
+        const tempId = `temp-${Date.now()}`;
+        const newCol: PlanColumn = {
+            id: tempId,
+            title: newColumnTitle.trim(),
+            position: columns.length,
+            created_at: new Date().toISOString()
+        };
 
-        try {
-            const newPosition = columns.length > 0
-                ? Math.max(...columns.map(c => c.position)) + 1
-                : 0;
-
-            const { data, error } = await supabase
-                .from('plan_columns')
-                .insert([{ title: newColumnTitle.trim(), position: newPosition }])
-                .select()
-                .single();
-
-            if (error) throw error;
-
-            setColumns(prev => [...prev, data]);
-            setNewColumnTitle('');
-        } catch (error) {
-            console.error('Error creating plan column:', error);
-            alert('Failed to create column');
-        } finally {
-            setIsCreating(false);
-        }
+        setColumns(prev => [...prev, newCol]);
+        setNewColumnTitle('');
     };
 
     const handleDeleteColumn = async (id: string, title: string) => {
-        // 1. Check for existing plans
-        const { count, error: countError } = await supabase
-            .from('plans')
-            .select('id', { count: 'exact', head: true })
-            .eq('status', title);
+        // Only check DB if it's a real column
+        if (!id.startsWith('temp-')) {
+            const { count, error: countError } = await supabase
+                .from('plans')
+                .select('id', { count: 'exact', head: true })
+                .eq('status', title);
 
-        if (countError) {
-            console.error('Error checking plans:', countError);
-            return;
-        }
+            if (countError) {
+                console.error('Error checking plans:', countError);
+                return;
+            }
 
-        if (count && count > 0) {
-            alert(`Cannot delete "${title}" because it contains ${count} active plans. Please move them first.`);
-            return;
+            if (count && count > 0) {
+                alert(`Cannot delete "${title}" because it contains ${count} active plans. Please move them first.`);
+                return;
+            }
         }
 
         if (!confirm(`delete "${title}" section?`)) return;
 
-        try {
-            const { error } = await supabase
-                .from('plan_columns')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
-
-            setColumns(prev => prev.filter(c => c.id !== id));
-        } catch (error) {
-            console.error('Error deleting plan column:', error);
-            alert('Failed to delete column');
-        }
+        setColumns(prev => prev.filter(c => c.id !== id));
+        setDeletedIds(prev => new Set(prev).add(id));
     };
 
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
-
         if (active.id !== over?.id) {
             setColumns((items) => {
                 const oldIndex = items.findIndex((item) => item.id === active.id);
                 const newIndex = items.findIndex((item) => item.id === over?.id);
-                const newItems = arrayMove(items, oldIndex, newIndex);
-
-                // Update positions in DB
-                const updates = newItems.map((col, index) => ({
-                    id: col.id,
-                    title: col.title,
-                    position: index,
-                    created_at: col.created_at
-                }));
-
-                // Fire and forget
-                supabase.from('plan_columns').upsert(updates).then(({ error }) => {
-                    if (error) console.error('Error updating plan positions:', error);
-                });
-
-                return newItems;
+                return arrayMove(items, oldIndex, newIndex);
             });
         }
     };
@@ -188,7 +223,8 @@ export function PlanColumnManager() {
                 <div>
                     <h3 className="text-xl font-bold text-white mb-1">Planner Sections</h3>
                     <p className="text-slate-400 text-sm">
-                        Customize the columns on your Planner Board.
+                        Customize the columns.
+                        <span className="text-indigo-400 ml-1 font-medium">Changes are local until saved.</span>
                     </p>
                 </div>
             </div>
@@ -217,7 +253,7 @@ export function PlanColumnManager() {
                     />
                     <button
                         onClick={handleAddColumn}
-                        disabled={isCreating || !newColumnTitle.trim()}
+                        disabled={!newColumnTitle.trim()}
                         className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg transition-colors flex items-center gap-2"
                     >
                         <Plus size={18} />
@@ -227,8 +263,8 @@ export function PlanColumnManager() {
 
             <div className="mt-4 flex items-start gap-2 text-xs text-slate-500 bg-slate-900/30 p-3 rounded-lg">
                 <AlertCircle size={14} className="mt-0.5 shrink-0" />
-                <p>Deleting a section is only possible if it has no active plans. Move plans to another section first. Drag to reorder.</p>
+                <p>Deleting a section is only possible if it has no active plans. Changes must be saved to take effect.</p>
             </div>
         </section>
     );
-}
+});
