@@ -1,6 +1,6 @@
-export type TodoStatus = 'Backlogs' | 'Today' | 'This Week' | 'Later';
+export type TodoStatus = string;
 
-export type PlanStatus = 'Not Started' | 'Going On' | 'Stuck' | 'Completed' | 'Archived';
+export type PlanStatus = string;
 
 export interface Tag {
     id: string;
@@ -10,14 +10,32 @@ export interface Tag {
 
 export interface Plan {
     id: string;
+    user_id?: string;
     title: string;
     description?: string;
     status: PlanStatus;
     created_at: string;
 }
 
+export interface PlanColumn {
+    id: string;
+    user_id?: string;
+    title: string;
+    position: number;
+    created_at: string;
+}
+
+export interface TaskColumn {
+    id: string;
+    user_id?: string;
+    title: string;
+    position: number;
+    created_at: string;
+}
+
 export interface Todo {
     id: string; // UUID from Supabase
+    user_id?: string;
     title: string;
     description?: string;
     status: TodoStatus;

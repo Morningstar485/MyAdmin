@@ -4,6 +4,8 @@ import { Trash2, AlertTriangle, Calendar, Save } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { CleanupModal } from './components/CleanupModal';
 import { TagsManager } from './components/TagsManager';
+import { ColumnManager } from './components/ColumnManager';
+import { PlanColumnManager } from './components/PlanColumnManager';
 
 export function SettingsBoard() {
     // Calculate default date (e.g., 30 days ago) for suggestion
@@ -99,6 +101,12 @@ export function SettingsBoard() {
                         </div>
                     </div>
                 </section>
+
+                {/* Task Sections Manager */}
+                <ColumnManager />
+
+                {/* Planner Sections Manager */}
+                <PlanColumnManager />
 
                 {/* Tags Manager */}
                 <TagsManager />

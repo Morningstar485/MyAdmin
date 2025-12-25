@@ -21,14 +21,12 @@ import { Plus } from 'lucide-react';
 import { Modal } from '../../components/Modal';
 import { PlanDetailsModal } from './components/PlanDetailsModal';
 
-const PLAN_COLUMNS: { title: string; status: PlanStatus }[] = [
-    { title: 'Not Started', status: 'Not Started' },
-    { title: 'Going On', status: 'Going On' },
-    { title: 'Stuck', status: 'Stuck' },
-    { title: 'Completed', status: 'Completed' },
-];
+
 
 export function PlannerBoard() {
+    // Dynamic Columns State
+    const [columns, setColumns] = useState<{ title: string; status: PlanStatus }[]>([]);
+
     const [plans, setPlans] = useState<Plan[]>([]);
     const [unallocatedTasks, setUnallocatedTasks] = useState<Todo[]>([]);
     const [allTasks, setAllTasks] = useState<Todo[]>([]); // To calculate progress
@@ -65,6 +63,25 @@ export function PlannerBoard() {
     }, []);
 
     async function fetchData() {
+        // 1. Fetch Columns
+        const { data: columnsData, error: columnsError } = await supabase
+            .from('plan_columns')
+            .select('*')
+            .order('position');
+
+        if (columnsError) console.error('Error fetching columns:', columnsError);
+
+        const loadedColumns = (columnsData && columnsData.length > 0)
+            ? columnsData.map(c => ({ title: c.title, status: c.title }))
+            : [
+                { title: 'Not Started', status: 'Not Started' },
+                { title: 'Going On', status: 'Going On' },
+                { title: 'Stuck', status: 'Stuck' },
+                { title: 'Completed', status: 'Completed' },
+            ];
+
+        setColumns(loadedColumns);
+
         // Fetch Plans
         const { data: plansData } = await supabase.from('plans').select('*').order('created_at');
         if (plansData) setPlans((plansData as Plan[]).filter(p => p.status !== 'Archived'));
@@ -94,10 +111,13 @@ export function PlannerBoard() {
     const handleCreatePlan = async () => {
         if (!newPlanTitle.trim()) return;
 
+        // Use first column as default status, or 'Not Started' fallback
+        const defaultStatus = columns.length > 0 ? columns[0].status : 'Not Started';
+
         const newPlan = {
             title: newPlanTitle,
             description: newPlanDescription,
-            status: 'Not Started' as PlanStatus,
+            status: defaultStatus,
         };
 
         const { data, error } = await supabase.from('plans').insert([newPlan]).select().single();
@@ -389,7 +409,7 @@ export function PlannerBoard() {
                 <div className="flex-1 overflow-x-hidden overflow-y-auto lg:overflow-x-auto lg:overflow-y-hidden pb-6 relative">
                     {/* Main Board: Planner Columns */}
                     <div className="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:min-w-[800px] min-w-full pb-20 lg:pb-0">
-                        {PLAN_COLUMNS.map(col => (
+                        {columns.map(col => (
                             <DroppableColumn
                                 key={col.status}
                                 col={col}

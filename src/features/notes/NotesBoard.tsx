@@ -60,6 +60,12 @@ export function NotesBoard() {
             updated_at: new Date().toISOString(),
         };
 
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            alert("You must be logged in to save notes.");
+            return;
+        }
+
         if (editingNote) {
             // Update
             const { error } = await supabase
@@ -69,7 +75,7 @@ export function NotesBoard() {
 
             if (error) {
                 console.error('Error updating note:', error);
-                alert('Failed to update note');
+                alert(`Failed to update note: ${error.message}`);
                 return;
             }
 
@@ -78,13 +84,13 @@ export function NotesBoard() {
             // Create
             const { data, error } = await supabase
                 .from('notes')
-                .insert([noteData])
+                .insert([{ ...noteData, user_id: user.id }])
                 .select()
                 .single();
 
             if (error || !data) {
                 console.error('Error creating note:', error);
-                alert('Failed to create note');
+                alert(`Failed to create note: ${error ? error.message : 'No data returned'}`);
                 return;
             }
 

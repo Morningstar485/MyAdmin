@@ -5,4 +5,5 @@ export interface Note {
     is_pinned: boolean;
     created_at: string;
     updated_at: string;
+    user_id?: string;
 }
