@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 interface ModalProps {
     isOpen: boolean;
     onClose: () => void;
-    title: string;
+    title: React.ReactNode;
     children: React.ReactNode;
     maxWidth?: string;
 }
@@ -27,7 +27,7 @@ export function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-md' 
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex items-center justify-between p-4 border-b border-slate-800 shrink-0">
-                    <h2 className="text-lg font-semibold text-white">{title}</h2>
+                    <div className="text-lg font-semibold text-white">{title}</div>
                     <button
                         onClick={onClose}
                         className="text-slate-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-slate-800"

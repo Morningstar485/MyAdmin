@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { PageHeader } from '../../components/PageHeader';
 import { Trash2, AlertTriangle, Calendar, Save, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -40,14 +40,18 @@ export function SettingsBoard() {
         return () => setBlocker(null);
     }, [hasUnsavedChanges, setBlocker]);
 
-    const handleDirtyChange = (id: string, isDirty: boolean) => {
+    const handleDirtyChange = useCallback((id: string, isDirty: boolean) => {
         setDirtyComponents(prev => {
             const next = new Set(prev);
             if (isDirty) next.add(id);
-            else next.delete(id);
+            else {
+                next.delete(id);
+            }
+            // Optimization: If set size and content hasn't changed, return previous reference to avoid re-render
+            if (prev.size === next.size && prev.has(id) === next.has(id)) return prev;
             return next;
         });
-    };
+    }, []);
 
     const handleSaveAll = async () => {
         if (isSaving) return;
@@ -197,7 +201,7 @@ export function SettingsBoard() {
 
             {/* Floating Save Actions */}
             <div className={`
-                fixed bottom-6 right-6 flex items-center gap-3 transition-all duration-300 transform
+                fixed bottom-6 right-6 flex items-center gap-3 transition-all duration-300 transform z-50
                 ${hasUnsavedChanges ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}
             `}>
                 <button
