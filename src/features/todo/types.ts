@@ -40,6 +40,7 @@ export interface Todo {
     description?: string;
     status: TodoStatus;
     completed: boolean;
+    due_date?: string | null; // ISO Date string
     duration?: number; // Estimated time in minutes
     order?: number; // For Drag and Drop sorting
     created_at: string; // Supabase uses snake_case by default
@@ -47,6 +48,7 @@ export interface Todo {
     plan_id?: string | null;
     plan?: Plan; // For displaying plan details
     is_archived?: boolean;
+    google_task_id?: string | null;
 }
 
 export const TAG_COLORS = [

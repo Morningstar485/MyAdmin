@@ -21,12 +21,15 @@ import { TaskCard } from './components/TaskCard';
 import { TaskDetailsModal } from './components/TaskDetailsModal';
 import { supabase } from '../../lib/supabase';
 import { Edit2, Trash2, X } from 'lucide-react';
-
-
+import { useGoogleTasks } from '../../hooks/useGoogleTasks';
 
 export function TodoBoard() {
-    // Dynamic Columns State
-    const [columns, setColumns] = useState<{ title: string; status: TodoStatus }[]>([]);
+    // Fixed Columns (Strict Mode)
+    const columns = [
+        { title: 'Today', status: 'Today' },
+        { title: 'This Week', status: 'This Week' },
+        { title: 'Later', status: 'Later' }
+    ];
 
     const [todos, setTodos] = useState<Todo[]>([]);
     const [tags, setTags] = useState<Tag[]>([]);
@@ -54,33 +57,20 @@ export function TodoBoard() {
         })
     );
 
-    // Initial Fetch
+    const googleTasks = useGoogleTasks();
+
+    // Initial Fetch & Auto-Organizer
     useEffect(() => {
-        fetchData();
+        const init = async () => {
+            // Run Auto-Organizer Logic first
+            await supabase.rpc('organize_board_by_deadline');
+            fetchData();
+        };
+        init();
     }, []);
 
     async function fetchData() {
         try {
-            // 1. Fetch Columns
-            const { data: columnsData, error: columnsError } = await supabase
-                .from('task_columns')
-                .select('*')
-                .order('position');
-
-            if (columnsError) throw columnsError;
-
-            // Fallback if no columns (e.g. before migration script run, or empty)
-            const loadedColumns = (columnsData && columnsData.length > 0)
-                ? columnsData.map(c => ({ title: c.title, status: c.title }))
-                : [
-                    { title: 'Backlogs', status: 'Backlogs' },
-                    { title: 'Today', status: 'Today' },
-                    { title: 'This Week', status: 'This Week' },
-                    { title: 'Later', status: 'Later' },
-                ];
-
-            setColumns(loadedColumns);
-
             // 2. Fetch Todos with Tags
             // Supabase Join: todo_tags -> tags
             const { data: todosData, error: todosError } = await supabase
@@ -103,8 +93,16 @@ export function TodoBoard() {
                     ...t,
                     tags: t.todo_tags.map((tt: any) => tt.tag).filter(Boolean)
                 }));
-                // Set todos (filtering/fixing logic omitted for brevity as it's separate)
+                // Set initial todos
                 setTodos(formattedTodos as Todo[]);
+
+                if (formattedTodos.length > 0) {
+                    console.log('[Fetch] First Task Keys:', Object.keys(formattedTodos[0]));
+                    console.log('[Fetch] First Task GID:', formattedTodos[0].google_task_id);
+                }
+
+                // --- Trigger Incoming Sync ---
+                syncWithGoogle(formattedTodos as Todo[]);
             }
 
             // Fetch Available Tags
@@ -120,6 +118,43 @@ export function TodoBoard() {
             console.error('Error fetching data:', error);
         }
     }
+
+    // --- Incoming Sync Logic ---
+    const syncWithGoogle = async (localTodos: Todo[]) => {
+        const googleItems = await googleTasks.listGoogleTasks();
+        if (!googleItems || googleItems.length === 0) return;
+
+        let hasUpdates = false;
+        const updates: any[] = [];
+        const updatedTodos = [...localTodos];
+
+        localTodos.forEach((todo, index) => {
+            if (!todo.google_task_id) return;
+
+            const googleTask = googleItems.find((gt: any) => gt.id === todo.google_task_id);
+            if (!googleTask) return;
+
+            const googleCompleted = googleTask.status === 'completed';
+
+            // Rule: Sync Completion Status (Incoming)
+            if (googleCompleted !== todo.completed) {
+                // Update Local State
+                updatedTodos[index] = { ...todo, completed: googleCompleted };
+                hasUpdates = true;
+
+                // Update Supabase
+                updates.push(
+                    supabase.from('todos').update({ completed: googleCompleted }).eq('id', todo.id)
+                );
+            }
+        });
+
+        if (hasUpdates) {
+            setTodos(updatedTodos);
+            await Promise.all(updates);
+            console.log(`Synced ${updates.length} tasks from Google.`);
+        }
+    };
 
     // --- Tag Handlers ---
 
@@ -248,6 +283,11 @@ export function TodoBoard() {
             todo.id === id ? { ...todo, completed: newCompleted } : todo
         ));
 
+        // Sync to Google
+        if (todoToUpdate.google_task_id) {
+            googleTasks.toggleCompletion(todoToUpdate.google_task_id, newCompleted);
+        }
+
         const { error } = await supabase
             .from('todos')
             .update({ completed: newCompleted })
@@ -261,7 +301,7 @@ export function TodoBoard() {
         }
     };
 
-    const handleCreate = async (title: string, description: string, status: TodoStatus, duration: number, taskTags: Tag[]) => {
+    const handleCreate = async (title: string, description: string, status: TodoStatus, duration: number, taskTags: Tag[], due_date: string | null, syncToGoogle: boolean) => {
         const tempId = Math.random().toString(36).substr(2, 9);
         const order = Date.now() / 1000;
 
@@ -272,6 +312,7 @@ export function TodoBoard() {
             status,
             completed: false,
             duration,
+            due_date,
             created_at: new Date().toISOString(),
             order,
             tags: taskTags
@@ -283,7 +324,7 @@ export function TodoBoard() {
         // 1. Insert Todo
         const { data, error } = await supabase
             .from('todos')
-            .insert([{ title, description, status, completed: false, duration, order }])
+            .insert([{ title, description, status, completed: false, duration, order, due_date }])
             .select()
             .single();
 
@@ -292,6 +333,15 @@ export function TodoBoard() {
             alert(`Failed to create task!`);
             setTodos(prev => prev.filter(t => t.id !== tempId));
             return;
+        }
+
+        let googleTaskId = null;
+        // Sync to Google Tasks if requested
+        if (syncToGoogle) {
+            googleTaskId = await googleTasks.createTaskInGoogle({ ...newTodo, id: data.id });
+            if (googleTaskId) {
+                await supabase.from('todos').update({ google_task_id: googleTaskId }).eq('id', data.id);
+            }
         }
 
         // 2. Insert Tags (Join Table)
@@ -304,22 +354,34 @@ export function TodoBoard() {
             if (tagError) console.error('Error linking tags:', tagError);
         }
 
-        // 3. Update local state with real ID
-        setTodos(prev => prev.map(t => t.id === tempId ? { ...t, id: data.id } : t));
+        // 3. Update local state with real ID & Google ID
+        setTodos(prev => prev.map(t => t.id === tempId ? { ...t, id: data.id, google_task_id: googleTaskId } : t));
     };
 
-    const handleUpdate = async (title: string, description: string, status: TodoStatus, duration: number, taskTags: Tag[]) => {
+    const handleUpdate = async (title: string, description: string, status: TodoStatus, duration: number, taskTags: Tag[], due_date: string | null, syncToGoogle: boolean) => {
         if (!editingTask) return;
 
-        const updatedTodo = { ...editingTask, title, description, status, duration, tags: taskTags };
+        const updatedTodo = { ...editingTask, title, description, status, duration, tags: taskTags, due_date };
 
         setTodos(prev => prev.map(t => t.id === editingTask.id ? updatedTodo : t));
         setEditingTask(null);
 
+        // Sync Update if Google ID exists
+        if (editingTask.google_task_id) {
+            googleTasks.updateTaskInGoogle(updatedTodo);
+        } else if (syncToGoogle) {
+            const googleId = await googleTasks.createTaskInGoogle(updatedTodo);
+            if (googleId) {
+                updatedTodo.google_task_id = googleId;
+                await supabase.from('todos').update({ google_task_id: googleId }).eq('id', editingTask.id);
+                setTodos(prev => prev.map(t => t.id === editingTask.id ? { ...t, google_task_id: googleId } : t));
+            }
+        }
+
         // 1. Update Todo
         const { error } = await supabase
             .from('todos')
-            .update({ title, description, status, duration })
+            .update({ title, description, status, duration, due_date })
             .eq('id', editingTask.id);
 
         if (error) {
@@ -329,7 +391,6 @@ export function TodoBoard() {
         }
 
         // 2. Update Tags (Delete all, then re-insert)
-        // Note: In a real app we might diff, but this is safer for now
         await supabase.from('todo_tags').delete().eq('todo_id', editingTask.id);
 
         if (taskTags.length > 0) {
@@ -344,7 +405,13 @@ export function TodoBoard() {
     const handleDelete = async (id: string) => {
         if (!window.confirm("Are you sure you want to delete this task?")) return;
 
+        const taskToDelete = todos.find(t => t.id === id);
         setTodos(prev => prev.filter(t => t.id !== id));
+
+        // Sync Delete
+        if (taskToDelete?.google_task_id) {
+            googleTasks.deleteTaskInGoogle(taskToDelete.google_task_id);
+        }
 
         const { error } = await supabase
             .from('todos')

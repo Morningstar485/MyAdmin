@@ -6,7 +6,7 @@ import { Plus } from 'lucide-react';
 interface TaskFormProps {
     initialValues?: Todo;
     availableTags: Tag[];
-    onSubmit: (title: string, description: string, status: TodoStatus, duration: number, tags: Tag[]) => void;
+    onSubmit: (title: string, description: string, status: TodoStatus, duration: number, tags: Tag[], due_date: string | null, syncToGoogle: boolean) => void;
     onCreateTag: (name: string, color: string) => Promise<Tag | null>;
     onCancel: () => void;
     submitLabel?: string;
@@ -15,9 +15,16 @@ interface TaskFormProps {
 export function TaskForm({ initialValues, availableTags, onSubmit, onCreateTag, onCancel, submitLabel = 'Create Task' }: TaskFormProps) {
     const [title, setTitle] = useState(initialValues?.title || '');
     const [description, setDescription] = useState(initialValues?.description || '');
-    const [status, setStatus] = useState<TodoStatus>(initialValues?.status || 'Backlogs');
+    const [status, setStatus] = useState<TodoStatus>(initialValues?.status || 'Today');
     const [duration, setDuration] = useState(initialValues?.duration?.toString() || '');
+    const [dueDate, setDueDate] = useState(() => {
+        if (!initialValues?.due_date) return '';
+        const d = new Date(initialValues.due_date);
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    });
     const [selectedTags, setSelectedTags] = useState<Tag[]>(initialValues?.tags || []);
+    const [syncToGoogle, setSyncToGoogle] = useState(true);
 
     // New Tag State
     const [isCreatingTag, setIsCreatingTag] = useState(false);
@@ -26,9 +33,35 @@ export function TaskForm({ initialValues, availableTags, onSubmit, onCreateTag, 
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!title.trim()) return;
-        onSubmit(title, description, status, parseInt(duration) || 0, selectedTags);
+
+        if (!title.trim()) {
+            alert("Title is required!");
+            return;
+        }
+
+        if (!dueDate) {
+            alert("Due Date is required!");
+            return;
+        }
+
+        const durationVal = parseInt(duration);
+        if (!duration || isNaN(durationVal) || durationVal <= 0 || !Number.isInteger(Number(duration))) {
+            alert("Duration must be a positive integer greater than 0.");
+            return;
+        }
+
+        // Convert local datetime to ISO string with timezone
+        let isoDate = null;
+        if (dueDate) {
+            isoDate = new Date(dueDate).toISOString();
+        }
+
+        onSubmit(title, description, status, durationVal, selectedTags, isoDate, syncToGoogle);
     };
+
+    // ... (rest of code)
+
+
 
     const toggleTag = (tag: Tag) => {
         if (selectedTags.find(t => t.id === tag.id)) {
@@ -72,7 +105,6 @@ export function TaskForm({ initialValues, availableTags, onSubmit, onCreateTag, 
                         onChange={(e) => setStatus(e.target.value as TodoStatus)}
                         className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all cursor-pointer"
                     >
-                        <option value="Backlogs">Backlogs</option>
                         <option value="Today">Today</option>
                         <option value="This Week">This Week</option>
                         <option value="Later">Later</option>
@@ -91,6 +123,18 @@ export function TaskForm({ initialValues, availableTags, onSubmit, onCreateTag, 
                         placeholder="e.g. 30"
                     />
                 </div>
+            </div>
+
+            {/* Due Date Input */}
+            <div>
+                <label htmlFor="dueDate" className="block text-sm font-medium text-slate-300 mb-1">Due Date <span className="text-red-400">*</span></label>
+                <input
+                    id="dueDate"
+                    type="datetime-local"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white caret-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder:text-slate-600"
+                />
             </div>
 
             {/* Tags Section */}
@@ -172,6 +216,18 @@ export function TaskForm({ initialValues, availableTags, onSubmit, onCreateTag, 
                 />
             </div>
 
+            <div>
+                <label className="flex items-center space-x-2 cursor-pointer group">
+                    <input
+                        type="checkbox"
+                        checked={syncToGoogle}
+                        onChange={(e) => setSyncToGoogle(e.target.checked)}
+                        className="form-checkbox h-4 w-4 text-indigo-500 rounded border-slate-700 bg-slate-800 transition-all group-hover:border-indigo-500/50"
+                    />
+                    <span className="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">Sync to Google Tasks</span>
+                </label>
+            </div>
+
             <div className="flex justify-end space-x-3 pt-2">
                 <button
                     type="button"
@@ -183,7 +239,6 @@ export function TaskForm({ initialValues, availableTags, onSubmit, onCreateTag, 
                 <button
                     type="button"
                     className="px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors shadow-lg shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={!title.trim() || !duration || parseInt(duration) <= 0}
                     onClick={handleSubmit}
                 >
                     {submitLabel}
