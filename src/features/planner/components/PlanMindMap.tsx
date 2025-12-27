@@ -192,7 +192,7 @@ export function PlanMindMap({ planId }: PlanMindMapProps) {
             const payload = {
                 title,
                 plan_id: planId,
-                status: 'Backlog', // Default
+                status: 'Today', // Default visible status
                 parent_task_id: isRootTask ? null : parentId,
                 // New Root Tasks are Detached by default (Template style)
                 metadata: isRootTask ? { detached: true } : {},
@@ -214,10 +214,47 @@ export function PlanMindMap({ planId }: PlanMindMapProps) {
         if (nodesRef.current.length === 0) setLoading(true);
         setError(null);
         try {
-            const { data, error } = await supabase.rpc('get_plan_tree', { plan_uuid: planId });
+            // Updated: Fetch ALL tasks for the plan directly, ignoring RPC limits or status filters
+            const { data: allPlanTasks, error } = await supabase
+                .from('todos')
+                .select('*')
+                .eq('plan_id', planId);
 
             if (error) throw error;
-            if (!data) return;
+            if (!allPlanTasks) return;
+
+            // Fetch Plan Details for the Root Node
+            const { data: planData, error: planError } = await supabase
+                .from('plans')
+                .select('*')
+                .eq('id', planId)
+                .single();
+
+            if (planError) throw planError;
+
+            // Build Tree Structure locally
+            const rootNode = {
+                id: planData.id,
+                title: planData.title,
+                type: 'plan',
+                status: planData.status,
+                children: [] as any[]
+            };
+
+            const taskMap = new Map();
+            allPlanTasks.forEach((t: any) => {
+                t.children = [];
+                taskMap.set(t.id, t);
+            });
+
+            // Assemble Tree
+            allPlanTasks.forEach((t: any) => {
+                if (t.parent_task_id && taskMap.has(t.parent_task_id)) {
+                    taskMap.get(t.parent_task_id).children.push(t);
+                } else {
+                    rootNode.children.push(t);
+                }
+            });
 
             const newNodes: Node[] = [];
             const newEdges: Edge[] = [];
@@ -230,6 +267,10 @@ export function PlanMindMap({ planId }: PlanMindMapProps) {
                 if (nodeData.type === 'plan') {
                     bgColor = '#312e81'; //indigo-900
                     borderColor = '#6366f1'; //indigo-500
+                } else if (nodeData.is_archived) {
+                    // ARCHIVED / FLUSHED STATUS: Green Background
+                    borderColor = '#15803d'; // green-700
+                    bgColor = '#14532d'; // green-900
                 } else {
                     switch (nodeData.status) {
                         case 'Completed': borderColor = '#4ade80'; bgColor = '#15803d'; break; // Light Green
@@ -245,7 +286,7 @@ export function PlanMindMap({ planId }: PlanMindMapProps) {
                     position: { x: 0, y: 0 }, // Calculated by dagre later
                     data: {
                         label: nodeData.title,
-                        status: nodeData.status,
+                        status: nodeData.is_archived ? 'Completed' : nodeData.status, // Show "Completed" if archived
                         id: nodeData.id,
                         bgColor,
                         borderColor,
@@ -256,41 +297,38 @@ export function PlanMindMap({ planId }: PlanMindMapProps) {
                 if (parentId) {
                     if (parentId === planId) {
                         // Root Logic with Metadata
-                        // Check explicit "detached" state. 
-                        // If metadata.detached is FALSE, we show the visible edge.
-                        // If metadata.detached is TRUE (or undefined aka default), we show invisible edge (Template style).
                         const isDetached = nodeData.metadata?.detached !== false;
 
                         if (isDetached) {
-                            // Invisible edge for layout (Detached)
                             newEdges.push({
                                 id: `${parentId}-${nodeData.id}`,
                                 source: parentId,
                                 target: nodeData.id,
                                 type: 'default',
-                                style: { opacity: 0, pointerEvents: 'none' }, // Invisible & Non-interactive
+                                style: { opacity: 0, pointerEvents: 'none' },
                             });
                         } else {
-                            // Visible Edge (Explicitly Connected)
                             newEdges.push({
                                 id: `${parentId}-${nodeData.id}`,
                                 source: parentId,
                                 target: nodeData.id,
                                 type: 'deletable',
                                 markerEnd: { type: MarkerType.ArrowClosed },
-                                style: { stroke: '#64748b' },
+                                style: { stroke: '#64748b' }, // Default line
                                 data: { targetNodeId: nodeData.id }
                             });
                         }
                     } else {
-                        // Standard deletable edge for sub-tasks
+                        // Task -> Task
+                        // Check if target is archived for green line?
+                        const isArchivedLink = nodeData.is_archived;
                         newEdges.push({
                             id: `${parentId}-${nodeData.id}`,
                             source: parentId,
                             target: nodeData.id,
-                            type: 'deletable', // Use custom edge
+                            type: 'deletable',
                             markerEnd: { type: MarkerType.ArrowClosed },
-                            style: { stroke: '#64748b' },
+                            style: { stroke: isArchivedLink ? '#15803d' : '#64748b', opacity: isArchivedLink ? 0.5 : 1 },
                             data: { targetNodeId: nodeData.id }
                         });
                     }
@@ -301,25 +339,19 @@ export function PlanMindMap({ planId }: PlanMindMapProps) {
                 }
             };
 
-            processNode(data);
+            processNode(rootNode);
 
             const layouted = getLayoutedElements(newNodes, newEdges);
 
-            // Merge Positions Logic: Layout Stability
+            // Merge Positions Logic
             const mergedNodes = layouted.nodes.map(newNode => {
                 const prevNode = nodesRef.current.find(n => n.id === newNode.id);
-                if (!prevNode) return newNode; // New node
-
-                // Find Parent in new vs old structure
+                if (!prevNode) return newNode;
                 const newParent = layouted.edges.find(e => e.target === newNode.id)?.source;
                 const prevParent = edgesRef.current.find(e => e.target === newNode.id)?.source;
-
-                // If parent structure is identical, keep position
                 if (newParent === prevParent) {
                     return { ...newNode, position: prevNode.position };
                 }
-
-                // If parent changed, snap to new structure
                 return newNode;
             });
 

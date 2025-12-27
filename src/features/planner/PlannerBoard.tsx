@@ -21,8 +21,6 @@ import { Plus } from 'lucide-react';
 import { Modal } from '../../components/Modal';
 import { PlanDetailsModal } from './components/PlanDetailsModal';
 
-
-
 export function PlannerBoard() {
     // Dynamic Columns State
     const [columns, setColumns] = useState<{ title: string; status: PlanStatus }[]>([]);
@@ -30,6 +28,8 @@ export function PlannerBoard() {
     const [plans, setPlans] = useState<Plan[]>([]);
     const [unallocatedTasks, setUnallocatedTasks] = useState<Todo[]>([]);
     const [allTasks, setAllTasks] = useState<Todo[]>([]); // To calculate progress
+    const [notes, setNotes] = useState<{ id: string, plan_id: string }[]>([]);
+
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [newPlanTitle, setNewPlanTitle] = useState('');
     const [newPlanDescription, setNewPlanDescription] = useState('');
@@ -86,6 +86,10 @@ export function PlannerBoard() {
         const { data: plansData } = await supabase.from('plans').select('*').order('created_at');
         if (plansData) setPlans((plansData as Plan[]).filter(p => p.status !== 'Archived'));
 
+        // Fetch Notes (Lightweight)
+        const { data: notesData } = await supabase.from('notes').select('id, plan_id');
+        if (notesData) setNotes(notesData);
+
         // Fetch Todos (needed for unallocated list + progress calc)
         const { data: todosData } = await supabase
             .from('todos')
@@ -93,8 +97,8 @@ export function PlannerBoard() {
                 *,
                 todo_tags ( tag:tags (*) ),
                 plan:plans (*)
-            `)
-            .eq('is_archived', false);
+            `);
+        // Removed .eq('is_archived', false) to include flushed tasks in stats/mindmap
 
         if (todosData) {
             const formattedTodos = todosData.map((t: any) => ({
@@ -103,8 +107,8 @@ export function PlannerBoard() {
             })) as Todo[];
 
             setAllTasks(formattedTodos);
-            // Only show incomplete tasks in the unallocated sidebar
-            setUnallocatedTasks(formattedTodos.filter(t => !t.plan_id && !t.completed));
+            // Only show active (non-archived), incomplete tasks in the unallocated sidebar
+            setUnallocatedTasks(formattedTodos.filter(t => !t.plan_id && !t.completed && !t.is_archived));
         }
     }
 
@@ -136,14 +140,10 @@ export function PlannerBoard() {
     };
 
     // --- DnD Handlers ---
-    // We are implementing simple drag from Sidebar (Task) to Plan (Project). 
-    // Reordering within lists is omitted for MVP simplicity.
-
     function handleDragStart(event: DragStartEvent) {
         const { active } = event;
         setActiveId(active.id as string);
 
-        // Determine type based on where it came from
         if (active.data.current?.type === 'task') {
             setActiveType('task');
         } else {
@@ -169,8 +169,6 @@ export function PlannerBoard() {
 
             // Optimistic Update
             setUnallocatedTasks(prev => prev.filter(t => t.id !== taskId));
-
-            // Optimistic Update: Update 'allTasks' to reflect the change so PlanCard stats update instantly.
             setAllTasks(prev => prev.map(t => t.id === taskId ? { ...t, plan_id: planId } : t));
 
             const { error } = await supabase
@@ -206,9 +204,6 @@ export function PlannerBoard() {
         }
     }
 
-    // Handle manual status change (e.g., from Dropdown)
-
-
     const handleUpdatePlan = async (planId: string, updates: Partial<Plan>) => {
         // Optimistic
         setPlans(prev => prev.map(p => p.id === planId ? { ...p, ...updates } : p));
@@ -239,8 +234,6 @@ export function PlannerBoard() {
             completed: false
         };
 
-        // We need the ID for optimistic update, but Supabase generates it. 
-        // Best to just wait for response for creation to ensure data integrity.
         const { data, error } = await supabase.from('todos').insert([newTask]).select('*, todo_tags ( tag:tags (*) )').single();
 
         if (error) {
@@ -259,14 +252,37 @@ export function PlannerBoard() {
     };
 
     const handleToggleTask = async (taskId: string, currentStatus: boolean) => {
-        // Optimistic
-        setAllTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: !currentStatus } : t));
-        setUnallocatedTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: !currentStatus } : t));
+        const newStatus = !currentStatus;
 
-        const { error } = await supabase.from('todos').update({ completed: !currentStatus }).eq('id', taskId);
+        // Optimistic Update
+        setAllTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: newStatus } : t));
+        setUnallocatedTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: newStatus } : t));
+
+        const { error } = await supabase.from('todos').update({ completed: newStatus }).eq('id', taskId);
+
         if (error) {
             console.error('Error toggling task:', error);
             fetchData();
+            return;
+        }
+
+        // Auto-Move Plan to Completed if all tasks are done
+        if (newStatus) { // Only check if we just completed a task
+            const task = allTasks.find(t => t.id === taskId);
+            if (task && task.plan_id) {
+                const planTasks = allTasks.filter(t => t.plan_id === task.plan_id);
+                // Check if ALL OTHER tasks are completed (plus the one we just toggled, which is now true locally)
+                const allCompleted = planTasks.every(t => t.id === taskId ? true : t.completed);
+
+                if (allCompleted) {
+                    const plan = plans.find(p => p.id === task.plan_id);
+                    // Only move if not already completed/archived
+                    if (plan && plan.status !== 'Completed' && plan.status !== 'Archived') {
+                        handleUpdatePlan(plan.id, { status: 'Completed' });
+                        // Optional: Notify user or just let it happen naturally
+                    }
+                }
+            }
         }
     };
 
@@ -278,19 +294,12 @@ export function PlannerBoard() {
         // Optimistic
         setPlans(prev => prev.filter(p => p.id !== planId));
 
-        // Soft delete/Archive tasks first to preserve them
         const { error: taskError } = await supabase
             .from('todos')
             .update({ is_archived: true, plan_id: null })
             .eq('plan_id', planId);
 
-        if (taskError) {
-            console.error('Error archiving plan tasks:', taskError);
-            // We continue to try deleting the plan, or should we stop? 
-            // If we stop, the plan remains but tasks might be partially archived? 
-            // In Supabase update is atomic for the query.
-            // Let's warn but try delete.
-        }
+        if (taskError) console.error('Error archiving plan tasks:', taskError);
 
         const { error: delError } = await supabase.from('plans').delete().eq('id', planId);
         if (delError) {
@@ -301,55 +310,62 @@ export function PlannerBoard() {
 
     const handleFlush = async () => {
         const completedPlans = plans.filter(p => p.status === 'Completed');
-        const plansToArchive = completedPlans.filter(p => {
-            const planTasks = allTasks.filter(t => t.plan_id === p.id);
-            return planTasks.length > 0 && planTasks.every(t => t.completed);
+
+        // STRICT RULE: Only flush plans where ALL tasks are completed
+        const plansToFlush = completedPlans.filter(p => {
+            const planTasks = allTasks.filter(t => t.plan_id === p.id && !t.is_archived);
+            // If plan has no tasks, it can be flushed. If it has tasks, they MUST be completed.
+            return planTasks.length === 0 || planTasks.every(t => t.completed);
         });
 
-        if (plansToArchive.length === 0) {
+        const incompletePlans = completedPlans.filter(p => !plansToFlush.includes(p));
+        if (incompletePlans.length > 0) {
+            alert(`Cannot flush ${incompletePlans.length} plans because they still have incomplete tasks. Please complete all tasks first.`);
+            return; // Stop if there are invalid plans, or continue with valid ones? User said "else show an error". 
+            // Let's flush the valid ones and warn about the others? 
+            // Usually "Flush" implies a bulk action. Let's just flush the valid ones but warn.
+            // Re-reading user request: "revert to the plan needing all of the tasks being completed to be able to be flushed, else it should show an error"
+            // This implies strict blocking.
+        }
+
+        if (plansToFlush.length === 0) {
             alert('No fully completed plans to flush.');
             return;
         }
 
-        if (!confirm(`Flush ${plansToArchive.length} completed plans? They will be archived along with their tasks.`)) return;
+        if (!confirm(`Flush ${plansToFlush.length} plans? This will archive the Plans and their Tasks.`)) return;
 
-        const ids = plansToArchive.map(p => p.id);
+        const ids = plansToFlush.map(p => p.id);
 
-        // Optimistic
-        setPlans(prev => prev.filter(p => !ids.includes(p.id)));
-        setAllTasks(prev => prev.filter(t => !ids.includes(t.plan_id || '')));
+        // 1. Archive Tasks
+        setAllTasks(prev => prev.map(t => ids.includes(t.plan_id || '') ? { ...t, is_archived: true } : t));
 
-        // Deep Flush: Archive associated tasks (soft delete) and decouple from plan?
-        // Wait, if we archive the plan, we probably want the tasks to stay associated with it for stats?
-        // But user said "Flush... effectively archives". 
-        // If I decouple (plan_id=null), then the plan has no tasks technically for stats query (unless I check history).
-        // Better: Keep `plan_id` BUT set `is_archived = true`.
         const { error: tasksError } = await supabase
             .from('todos')
-            .update({ is_archived: true }) // Keep plan_id so we can count tasks for the archived plan later
+            .update({ is_archived: true })
             .in('plan_id', ids);
 
         if (tasksError) {
             console.error('Error archiving tasks:', tasksError);
-            alert('Failed to archive associated tasks');
-            fetchData();
+            alert('Failed to archive tasks');
             return;
         }
 
-        // Archive Plans
-        const { error } = await supabase
+        // 2. Archive Plans (Flush the Plan itself)
+        setPlans(prev => prev.filter(p => !ids.includes(p.id))); // Remove from view
+
+        const { error: plansError } = await supabase
             .from('plans')
-            .update({ status: 'Archived' })
+            .update({ status: 'Archived' as any }) // Cast to any if type is stricter
             .in('id', ids);
 
-        if (error) {
-            console.error('Error archiving plans:', error);
-            alert('Failed to archive plans');
+        if (plansError) {
+            console.error('Error archiving plans:', plansError);
+            // Revert local state if needed, or just fetch
             fetchData();
-        } else {
-            alert(`Archived ${ids.length} plans.`);
         }
     };
+
 
     return (
         <DndContext
@@ -415,6 +431,7 @@ export function PlannerBoard() {
                                 col={col}
                                 plans={plans}
                                 allTasks={allTasks}
+                                notes={notes}
                                 setSelectedPlanId={setSelectedPlanId}
                                 isEditing={isEditing}
                                 onDeletePlan={handleDeletePlan}
@@ -524,11 +541,6 @@ export function PlannerBoard() {
     );
 }
 
-// --- Helper Components ---
-
-// --- Helper Components ---
-// Defined here to access isEditing easily or use context. But passing props is fine.
-
 function DraggableTask({ task }: { task: Todo }) {
     const { attributes, listeners, setNodeRef, transform } = useDraggable({
         id: task.id,
@@ -550,6 +562,7 @@ function DroppableColumn({
     col,
     plans,
     allTasks,
+    notes,
     setSelectedPlanId,
     isEditing,
     onDeletePlan
@@ -557,6 +570,7 @@ function DroppableColumn({
     col: { title: string, status: PlanStatus },
     plans: Plan[],
     allTasks: Todo[],
+    notes: { id: string, plan_id: string }[],
     setSelectedPlanId: (id: string | null) => void,
     isEditing: boolean,
     onDeletePlan: (id: string) => void
@@ -587,10 +601,11 @@ function DroppableColumn({
                 </span>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar px-1">
+            <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar p-2">
                 {plans.filter(p => p.status === col.status).map(plan => {
                     const planTasks = allTasks.filter(t => t.plan_id === plan.id);
                     const completed = planTasks.filter(t => t.completed).length;
+                    const planNotes = notes.filter(n => n.plan_id === plan.id).length;
 
                     return (
                         <DroppablePlan
@@ -598,6 +613,8 @@ function DroppableColumn({
                             plan={plan}
                             taskCount={planTasks.length}
                             completedCount={completed}
+                            noteCount={planNotes}
+                            hasMindMap={true}
                             onClick={() => setSelectedPlanId(plan.id)}
                             isEditing={isEditing}
                             onDelete={() => onDeletePlan(plan.id)}
@@ -613,6 +630,8 @@ function DroppablePlan({
     plan,
     taskCount,
     completedCount,
+    noteCount,
+    hasMindMap,
     onClick,
     isEditing,
     onDelete
@@ -620,11 +639,12 @@ function DroppablePlan({
     plan: Plan;
     taskCount: number;
     completedCount: number;
+    noteCount: number;
+    hasMindMap: boolean;
     onClick: () => void;
     isEditing: boolean;
     onDelete: () => void;
 }) {
-    // Make Plan droppable (for tasks) AND draggable (for itself)
     const { setNodeRef: setDropRef, isOver } = useDroppable({
         id: plan.id,
         data: { type: 'plan', plan }
@@ -635,7 +655,6 @@ function DroppablePlan({
         data: { type: 'plan', plan }
     });
 
-    // Merge refs
     const setNodeRef = (el: HTMLElement | null) => {
         setDropRef(el);
         setDragRef(el);
@@ -660,11 +679,11 @@ function DroppablePlan({
                 onClick={onClick}
                 taskCount={taskCount}
                 completedCount={completedCount}
+                noteCount={noteCount}
+                hasMindMap={hasMindMap}
                 isEditing={isEditing}
                 onDelete={onDelete}
             />
         </div>
     );
 }
-
-

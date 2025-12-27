@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '../../../lib/supabase';
 import type { Plan, Todo } from '../../todo/types';
+import type { Note } from '../../notes/types';
 import { Modal } from '../../../components/Modal';
 import { TaskCard } from '../../todo/components/TaskCard';
-import { CheckCircle2, Plus, Save } from 'lucide-react';
+import { NoteCard } from '../../notes/components/NoteCard';
+import { CheckCircle2, Plus, Save, StickyNote, Network, LayoutTemplate } from 'lucide-react';
 import { RichTextEditor } from '../../notes/components/RichTextEditor';
 import { PlanMindMap } from './PlanMindMap';
-import { Network, LayoutTemplate } from 'lucide-react';
 
 interface PlanDetailsModalProps {
     plan: Plan | null;
@@ -32,16 +34,102 @@ export function PlanDetailsModal({
 }: PlanDetailsModalProps) {
     const [isDescriptionEditing, setIsDescriptionEditing] = useState(false);
     const [description, setDescription] = useState('');
-    const [showAddTask, setShowAddTask] = useState(false); // 'existing' | 'new' | null (simplified to boolean for dropdown vs input?)
+    const [showAddTask, setShowAddTask] = useState(false);
     const [newTaskTitle, setNewTaskTitle] = useState('');
     const [activeTab, setActiveTab] = useState<'existing' | 'new'>('new');
-    const [viewMode, setViewMode] = useState<'overview' | 'mindmap'>('overview');
+    const [viewMode, setViewMode] = useState<'overview' | 'mindmap' | 'notes'>('overview');
+
+    // Notes State
+    const [notes, setNotes] = useState<Note[]>([]);
+    const [isNotesLoading, setIsNotesLoading] = useState(false);
+    // Unlinked Notes State
+    const [unlinkedNotes, setUnlinkedNotes] = useState<Note[]>([]);
+    const [showLinkNote, setShowLinkNote] = useState(false);
 
     useEffect(() => {
         if (plan) {
             setDescription(plan.description || '');
         }
     }, [plan?.id, plan?.description]);
+
+    // Fetch notes when switching to 'notes' tab
+    useEffect(() => {
+        if (plan?.id && viewMode === 'notes') {
+            fetchPlanNotes();
+        }
+    }, [plan?.id, viewMode]);
+
+    const fetchPlanNotes = async () => {
+        if (!plan) return;
+        setIsNotesLoading(true);
+        const { data } = await supabase
+            .from('notes')
+            .select('*')
+            .eq('plan_id', plan.id)
+            .order('updated_at', { ascending: false });
+
+        if (data) setNotes(data as Note[]);
+        setIsNotesLoading(false);
+    };
+
+    const fetchUnlinkedNotes = async () => {
+        setIsNotesLoading(true);
+        const { data } = await supabase
+            .from('notes')
+            .select('*')
+            // Fetch notes not assigned to any plan (or specifically fetch where plan_id is null)
+            // But user might want to re-assign? Let's stick to unassigned first for simplicity
+            .is('plan_id', null)
+            .order('updated_at', { ascending: false });
+
+        if (data) setUnlinkedNotes(data as Note[]);
+        setIsNotesLoading(false);
+    };
+
+    const handleLinkNote = async (noteId: string) => {
+        if (!plan) return;
+        const { error } = await supabase
+            .from('notes')
+            .update({ plan_id: plan.id })
+            .eq('id', noteId);
+
+        if (error) {
+            console.error('Error linking note:', error);
+            alert('Failed to link note');
+        } else {
+            // Refresh
+            fetchPlanNotes();
+            setShowLinkNote(false);
+        }
+    };
+
+    const handleCreateLinkedNote = async () => {
+        if (!plan) return;
+        const title = prompt("Note Title:");
+        if (!title) return;
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+            .from('notes')
+            .insert([{
+                title,
+                content: '',
+                plan_id: plan.id,
+                user_id: user.id,
+                updated_at: new Date().toISOString()
+            }])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error creating linked note:', error);
+            alert('Failed to create note');
+        } else if (data) {
+            setNotes(prev => [data as Note, ...prev]);
+        }
+    };
 
     if (!plan) return null;
 
@@ -83,7 +171,7 @@ export function PlanDetailsModal({
                     </div>
                 </div>
             }
-            maxWidth="max-w-4xl"
+            maxWidth="max-w-6xl"
         >
             <div className="space-y-6">
                 {/* View Tabs */}
@@ -100,11 +188,90 @@ export function PlanDetailsModal({
                     >
                         <Network size={16} /> Mind Map
                     </button>
+                    <button
+                        onClick={() => setViewMode('notes')}
+                        className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${viewMode === 'notes' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+                    >
+                        <StickyNote size={16} /> Linked Notes
+                    </button>
                 </div>
 
                 {viewMode === 'mindmap' ? (
                     <div className="animate-in fade-in zoom-in-95 duration-200">
                         <PlanMindMap planId={plan.id} />
+                    </div>
+                ) : viewMode === 'notes' ? (
+                    <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex flex-col gap-2 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                            <div className="flex justify-between items-center">
+                                <h4 className="text-sm font-semibold text-slate-300">Notes for this Plan</h4>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => {
+                                            setShowLinkNote(!showLinkNote);
+                                            if (!showLinkNote) fetchUnlinkedNotes();
+                                        }}
+                                        className={`text-xs px-3 py-1.5 rounded transition-colors flex items-center gap-1.5 border ${showLinkNote ? 'bg-slate-700 text-white border-slate-600' : 'text-slate-400 border-slate-700 hover:text-slate-200'}`}
+                                    >
+                                        <Network size={14} /> Link Existing
+                                    </button>
+                                    <button
+                                        onClick={handleCreateLinkedNote}
+                                        className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1.5"
+                                    >
+                                        <Plus size={14} /> New Note
+                                    </button>
+                                </div>
+                            </div>
+
+                            {showLinkNote && (
+                                <div className="mt-2 p-2 bg-slate-900/50 rounded-lg border border-slate-700 max-h-40 overflow-y-auto custom-scrollbar animate-in slide-in-from-top-1">
+                                    {unlinkedNotes.length === 0 ? (
+                                        <p className="text-xs text-slate-500 italic text-center py-2">No unlinked notes found.</p>
+                                    ) : (
+                                        <div className="space-y-1">
+                                            {unlinkedNotes.map(note => (
+                                                <button
+                                                    key={note.id}
+                                                    onClick={() => handleLinkNote(note.id)}
+                                                    className="w-full text-left flex items-center justify-between p-2 rounded hover:bg-slate-800 group transition-colors"
+                                                >
+                                                    <span className="text-sm text-slate-300 group-hover:text-white truncate">{note.title || 'Untitled Note'}</span>
+                                                    <Plus size={12} className="text-slate-500 group-hover:text-indigo-400" />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {isNotesLoading ? (
+                            <div className="text-center py-10 text-slate-500">Loading notes...</div>
+                        ) : notes.length === 0 ? (
+                            <div className="text-center py-12 text-slate-500 bg-slate-800/20 rounded-xl border border-dashed border-slate-700">
+                                <StickyNote className="mx-auto mb-2 opacity-20" size={32} />
+                                No notes linked to this plan yet.
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {notes.map(note => (
+                                    <NoteCard
+                                        key={note.id}
+                                        note={note}
+                                        onClick={() => {
+                                            alert("To edit full content, please use the main Notes Board. Quick edit coming soon!");
+                                        }}
+                                        onDelete={async (e) => {
+                                            e.stopPropagation();
+                                            if (!confirm('Delete this note?')) return;
+                                            const { error } = await supabase.from('notes').delete().eq('id', note.id);
+                                            if (!error) setNotes(prev => prev.filter(n => n.id !== note.id));
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <>
@@ -228,16 +395,25 @@ export function PlanDetailsModal({
                             )}
 
                             {tasks.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                                    {tasks.map(task => (
-                                        <TaskCard
-                                            key={task.id}
-                                            todo={task}
-                                            onToggle={() => onToggleTask(task.id, task.completed)}
-                                            isEditing={false}
-                                            isCompact={true}
-                                        />
-                                    ))}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                    {[...tasks]
+                                        .sort((a, b) => {
+                                            // Sort order: Active > Completed > Archived
+                                            if (a.is_archived && !b.is_archived) return 1;
+                                            if (!a.is_archived && b.is_archived) return -1;
+                                            if (a.completed && !b.completed) return 1;
+                                            if (!a.completed && b.completed) return -1;
+                                            return 0;
+                                        })
+                                        .map(task => (
+                                            <TaskCard
+                                                key={task.id}
+                                                todo={task}
+                                                onToggle={() => onToggleTask(task.id, task.completed)}
+                                                isEditing={false}
+                                                isCompact={true}
+                                            />
+                                        ))}
                                 </div>
                             ) : (
                                 <div className="text-center py-8 text-slate-500 bg-slate-800/20 rounded-xl border border-dashed border-slate-700">
