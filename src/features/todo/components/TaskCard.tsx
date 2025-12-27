@@ -49,11 +49,8 @@ export function TaskCard({ todo, onToggle, isEditing, onEdit, onClick, isCompact
                 group relative border
                 transition-all duration-300 ease-out
                 ${isCompact ? 'p-2 rounded-lg' : 'p-4 rounded-xl'}
-                ${isArchived
-                    ? 'bg-emerald-900/20 border-emerald-500/30 hover:bg-emerald-900/40 hover:border-emerald-500/50'
-                    : 'bg-slate-800/40 border-slate-700/50 hover:border-slate-600 hover:bg-slate-800/80 hover:shadow-xl hover:shadow-black/20'
-                }
-                ${isCompleted && !isArchived ? 'opacity-50 hover:opacity-100 grayscale-[0.5]' : ''}
+                bg-slate-800/40 border-slate-700/50 hover:border-slate-600 hover:bg-slate-800/80 hover:shadow-xl hover:shadow-black/20
+                ${(isCompleted || isArchived) ? 'opacity-50 hover:opacity-100 grayscale-[0.5]' : ''}
                 ${isEditing ? `cursor-pointer border-solid hover:ring-2 ${hoverClass}` : ''}
                 ${deadlineClass}
             `}

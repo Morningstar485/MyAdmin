@@ -1,3 +1,11 @@
+export interface Folder {
+    id: string;
+    name: string;
+    parent_id: string | null;
+    user_id: string;
+    created_at: string;
+}
+
 export interface Note {
     id: string;
     title: string;
@@ -7,4 +15,6 @@ export interface Note {
     updated_at: string;
     user_id?: string;
     plan_id?: string;
+    folder_id?: string | null; // Added for Folder System
 }
+
