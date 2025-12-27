@@ -47,7 +47,7 @@ export function TaskCard({ todo, onToggle, isEditing, onEdit, onClick, isCompact
                 group relative bg-slate-800/40 border border-slate-700/50
                 hover:border-slate-600 hover:bg-slate-800/80 hover:shadow-xl hover:shadow-black/20
                 transition-all duration-300 ease-out
-                ${isCompact ? 'p-2 rounded-lg' : 'p-3 rounded-xl'}
+                ${isCompact ? 'p-2 rounded-lg' : 'p-4 rounded-xl'}
                 ${isCompleted ? 'opacity-50 hover:opacity-100 grayscale-[0.5]' : ''}
                 ${isEditing ? `cursor-pointer border-solid hover:ring-2 ${hoverClass}` : ''}
                 ${deadlineClass}
@@ -94,11 +94,6 @@ export function TaskCard({ todo, onToggle, isEditing, onEdit, onClick, isCompact
 
                 {/* Right: Date & Icons */}
                 <div className="flex items-center gap-2 shrink-0">
-                    {todo.google_task_id && (
-                        <div className="text-blue-400" title="Synced with Google Tasks">
-                            <Share2 size={12} strokeWidth={2.5} />
-                        </div>
-                    )}
                     {dueDate && (
                         <span className={`text-xs font-medium ${hoursLeft && hoursLeft < 0 ? 'text-red-400' :
                             hoursLeft && hoursLeft < 10 ? 'text-yellow-400' : 'text-slate-400'
@@ -107,14 +102,18 @@ export function TaskCard({ todo, onToggle, isEditing, onEdit, onClick, isCompact
                         </span>
                     )}
 
-                    {/* Placeholder Icons (Google Calendar / Edit) */}
+                    {/* Icons: Edit | Google Sync | Clock */}
                     <div className="flex items-center gap-1">
                         {isEditing ? (
                             <div className="w-5 h-5 bg-yellow-500/20 rounded text-yellow-500 flex items-center justify-center border border-yellow-500/30" title="Edit Mode">
                                 <Edit2 size={12} strokeWidth={2.5} />
                             </div>
+                        ) : todo.google_task_id ? (
+                            <div className="w-5 h-5 bg-blue-500/20 rounded text-blue-400 flex items-center justify-center border border-blue-500/30" title="Synced with Google Tasks">
+                                <Share2 size={12} strokeWidth={2.5} />
+                            </div>
                         ) : (
-                            <div className="w-5 h-5 bg-[#2C2C2E] rounded text-blue-400 flex items-center justify-center border border-[#3A3A3C]" title="Google Calendar">
+                            <div className="w-5 h-5 bg-[#2C2C2E] rounded text-blue-400 flex items-center justify-center border border-[#3A3A3C]" title="Due Time">
                                 <Clock size={12} strokeWidth={2.5} />
                             </div>
                         )}
@@ -123,7 +122,7 @@ export function TaskCard({ todo, onToggle, isEditing, onEdit, onClick, isCompact
             </div>
 
             {/* Bottom Row: Tags | Duration */}
-            <div className="flex justify-between items-end mt-2">
+            <div className="flex justify-between items-end mt-4">
                 {/* Left: Tags / Plan */}
                 <div className="flex flex-wrap items-center gap-2">
                     {todo.plan && (

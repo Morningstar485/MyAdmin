@@ -42,7 +42,7 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                     fixed inset-y-0 left-0 z-50 bg-slate-900 border-r border-slate-800 flex flex-col py-6 transition-transform duration-300 ease-in-out
                     lg:static lg:bg-slate-900/50 lg:backdrop-blur-xl lg:z-20
                     ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-                    ${isCollapsed ? 'lg:w-20' : 'lg:w-64'}
+                    ${isCollapsed ? 'lg:w-20' : 'lg:w-56'} // Size of sidebar
                     w-64 shadow-2xl lg:shadow-none
                 `}
             >

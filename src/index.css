@@ -17,6 +17,11 @@ body {
 }
 
 /* Custom Scrollbar Styles */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 transparent;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

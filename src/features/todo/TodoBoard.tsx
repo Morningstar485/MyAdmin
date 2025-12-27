@@ -19,6 +19,7 @@ import { Modal } from '../../components/Modal';
 import { TaskForm } from './components/TaskForm';
 import { TaskCard } from './components/TaskCard';
 import { TaskDetailsModal } from './components/TaskDetailsModal';
+import { FocusSidebar } from './components/FocusSidebar';
 import { supabase } from '../../lib/supabase';
 import { Edit2, Trash2, X } from 'lucide-react';
 import { useGoogleTasks } from '../../hooks/useGoogleTasks';
@@ -512,7 +513,7 @@ export function TodoBoard() {
                     </div>
                 </PageHeader>
 
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 overflow-y-auto lg:overflow-hidden pb-20 lg:pb-0">
+                <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-[1fr_1fr_1fr_240px] gap-6 overflow-y-auto lg:overflow-hidden pb-20 lg:pb-6">
                     {columns.map(col => (
                         <TodoColumn
                             key={col.status}
@@ -526,6 +527,11 @@ export function TodoBoard() {
                             onTaskClick={handleTaskClick}
                         />
                     ))}
+
+                    {/* Focus Sidebar (Visible on XL screens, or stacks at bottom) */}
+                    <div className="hidden xl:block h-full overflow-hidden">
+                        <FocusSidebar />
+                    </div>
                 </div>
 
                 <DragOverlay>
