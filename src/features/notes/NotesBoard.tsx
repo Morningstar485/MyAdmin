@@ -1,17 +1,15 @@
 import { useState } from 'react';
 import { PageHeader } from '../../components/PageHeader';
-import { Plus, Search, FolderPlus, Home, ChevronRight, ArrowLeft, Maximize2, Minimize2, Pencil } from 'lucide-react';
+import { useFileSystem } from './hooks/useFileSystem';
+import { Modal } from '../../components/Modal';
+import { RichTextEditor } from './components/RichTextEditor';
 import { supabase } from '../../lib/supabase';
 import type { Note } from './types';
-import { NoteCard } from './components/NoteCard';
-import { DraggableNote } from './components/DraggableNote';
-import { DroppableFolder } from './components/DroppableFolder';
-import { RichTextEditor } from './components/RichTextEditor';
-import { Modal } from '../../components/Modal';
-import { useFileSystem } from './hooks/useFileSystem';
-import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
+import { Folder as FolderIcon, FileText, ChevronRight, Pencil, Trash2 } from 'lucide-react';
+import { useWorkspace } from '../../contexts/WorkspaceContext';
 
 export function NotesBoard() {
+    // 1. File System Hook
     const {
         currentFolderId,
         folders,
@@ -20,346 +18,346 @@ export function NotesBoard() {
         isLoading,
         navigateTo,
         createFolder,
-        moveNote,
         refresh
     } = useFileSystem();
 
-    const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+    const { workspace } = useWorkspace();
+
+    // 2. Local State
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [editingNote, setEditingNote] = useState<Note | null>(null);
-    const [isEditorExpanded, setIsEditorExpanded] = useState(false);
-    const [isEditingMode, setIsEditingMode] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [activeDraggable, setActiveDraggable] = useState<Note | null>(null);
+    const [isEditingMode, setIsEditingMode] = useState(false); // Read-only vs Edit toggle
 
-    // Sensors
-    const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: {
-                distance: 8, // Prevent accidental drags
-            },
-        })
-    );
+    const [noteTitle, setNoteTitle] = useState('');
+    const [noteContent, setNoteContent] = useState('');
 
-    // Editor State
-    const [editorContent, setEditorContent] = useState('');
-    const [title, setTitle] = useState('');
+    // For Folders
+    const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
+    const [newFolderName, setNewFolderName] = useState('');
 
-    const openCreateNoteModal = () => {
+    // Reset state when modal closes
+    const handleCloseModal = () => {
+        setIsCreateModalOpen(false);
         setEditingNote(null);
-        setTitle('');
-        setEditorContent('');
-        setIsEditingMode(true); // New notes start in edit mode
-        setIsNoteModalOpen(true);
+        setNoteTitle('');
+        setNoteContent('');
+        setIsEditingMode(false);
     };
 
-    const openEditNoteModal = (note: Note) => {
+    const handleOpenNote = (note: Note) => {
         setEditingNote(note);
-        setTitle(note.title);
-        setEditorContent(note.content || '');
-        setIsEditingMode(false); // Existing notes start in read-only
-        setIsNoteModalOpen(true);
+        setNoteTitle(note.title);
+        setNoteContent(note.content);
+        setIsEditingMode(false); // Default to Read Only
+        setIsCreateModalOpen(true);
+    };
+
+    const handleCreateNote = () => {
+        setEditingNote(null);
+        setNoteTitle('');
+        setNoteContent('');
+        setIsEditingMode(true); // New notes are editable
+        setIsCreateModalOpen(true);
     };
 
     const handleSaveNote = async () => {
-        if (!title.trim() && !editorContent.trim()) return;
+        if (!noteTitle.trim()) return;
 
-        const noteData = {
-            title,
-            content: editorContent,
-            updated_at: new Date().toISOString(),
-            folder_id: editingNote ? undefined : currentFolderId // Only set folder on create
-        };
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
 
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+            if (editingNote) {
+                // Update
+                const { error } = await supabase
+                    .from('notes')
+                    .update({
+                        title: noteTitle,
+                        content: noteContent,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', editingNote.id);
 
-        if (editingNote) {
-            const { error } = await supabase.from('notes').update(noteData).eq('id', editingNote.id);
-            if (error) {
-                console.error('Error updating note:', error);
-                alert('Failed to update note');
+                if (error) throw error;
+            } else {
+                // Create
+                const { error } = await supabase
+                    .from('notes')
+                    .insert([{
+                        title: noteTitle,
+                        content: noteContent,
+                        is_pinned: false,
+                        folder_id: currentFolderId,
+                        user_id: user.id,
+                        workspace // Inject Workspace
+                    }]);
+
+                if (error) throw error;
             }
-        } else {
-            const { error } = await supabase.from('notes').insert([{ ...noteData, user_id: user.id }]);
-            if (error) {
-                console.error('Error creating note:', error);
-                alert('Failed to create note');
-            }
+
+            refresh();
+            handleCloseModal();
+        } catch (error) {
+            console.error('Error saving note:', error);
+            alert('Failed to save note');
         }
-
-        setIsNoteModalOpen(false);
-        refresh();
     };
 
-    const handleDeleteNote = async (e: React.MouseEvent, id: string) => {
-        e.stopPropagation();
-        if (!window.confirm("Delete this note?")) return;
-
-        const { error } = await supabase.from('notes').delete().eq('id', id);
-        if (error) {
+    const handleDeleteNote = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this note?')) return;
+        try {
+            const { error } = await supabase.from('notes').delete().eq('id', id);
+            if (error) throw error;
+            refresh();
+            handleCloseModal(); // In case we delete from within modal (if we add that button)
+        } catch (error) {
             console.error('Error deleting note:', error);
             alert('Failed to delete note');
-        } else {
-            refresh();
         }
     };
 
-    const handleCreateFolder = () => {
-        const name = prompt("Enter folder name:");
-        if (name && name.trim()) {
-            createFolder(name.trim());
-        }
+    const handleCreateFolder = async () => {
+        if (!newFolderName.trim()) return;
+        await createFolder(newFolderName);
+        setNewFolderName('');
+        setIsFolderModalOpen(false);
     };
 
-    const handleDragStart = (event: DragStartEvent) => {
-        const { active } = event;
-        if (active.data.current?.type === 'note') {
-            setActiveDraggable(active.data.current.note as Note);
-        }
-    };
-
-    const handleDragEnd = async (event: DragEndEvent) => {
-        const { active, over } = event;
-        setActiveDraggable(null);
-
-        if (!over) return;
-
-        // If dropped on a folder
-        if (active.data.current?.type === 'note' && over.data.current?.type === 'folder') {
-            const noteId = (active.data.current.note as Note).id;
-            const targetFolderId = (over.data.current.folder as any).id;
-
-            if (window.confirm(`Move note to "${over.data.current.folder.name}"?`)) {
-                await moveNote(noteId, targetFolderId);
-            }
-        }
-    };
-
-    const filteredNotes = notes.filter(note =>
-        note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        note.content.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    const filteredFolders = folders.filter(folder =>
-        folder.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    // Calculate Grid Stats?
+    // Not really needed for Notes, but easy enough.
 
     return (
-        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <div className="h-full flex flex-col px-6 pt-6 touch-none">
-                <PageHeader
-                    title="Notes"
-                    description="Capture your thoughts and organized ideas."
-                    stats={[
-                        { label: 'Folders', value: folders.length },
-                        { label: 'Notes', value: notes.length }
-                    ]}
-                >
-                    <div className="flex items-center gap-3">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search current folder..."
-                                className="bg-slate-800 border-none rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder:text-slate-500 w-64 focus:ring-2 focus:ring-indigo-500/50"
-                            />
-                        </div>
-
-                        <button
-                            onClick={handleCreateFolder}
-                            className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                        >
-                            <FolderPlus size={18} />
-                            New Folder
-                        </button>
-
-                        <button
-                            onClick={openCreateNoteModal}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-600/20 active:scale-95 flex items-center gap-2"
-                        >
-                            <Plus size={18} />
-                            New Note
-                        </button>
-                    </div>
-                </PageHeader>
-
-                {/* Breadcrumbs */}
-                <div className="flex items-center gap-2 mb-6 text-sm text-slate-400 overflow-x-auto pb-2">
+        <div className="h-full flex flex-col px-6 pt-6 overflow-hidden">
+            <PageHeader
+                title="My Notes"
+                description="Capture ideas and documents."
+            >
+                <div className="flex items-center gap-3">
                     <button
-                        onClick={() => navigateTo(null)}
-                        className={`flex items-center gap-1 hover:text-white transition-colors ${currentFolderId === null ? 'text-white font-semibold' : ''}`}
+                        onClick={() => setIsFolderModalOpen(true)}
+                        className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-slate-700"
                     >
-                        <Home size={14} />
-                        Root
+                        + New Folder
                     </button>
-                    {breadcrumbs.map((crumb, index) => (
-                        <div key={crumb.id} className="flex items-center gap-2 shrink-0">
-                            <ChevronRight size={14} className="text-slate-600" />
-                            <DropZoneBreadcrumb
-                                name={crumb.name}
-                                onClick={() => navigateTo(crumb.id)}
-                                active={index === breadcrumbs.length - 1}
-                            />
-                        </div>
-                    ))}
+                    <button
+                        onClick={handleCreateNote}
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-600/20"
+                    >
+                        + New Note
+                    </button>
                 </div>
+            </PageHeader>
 
-                {/* Back Button (Mobile/Convenience) */}
-                {currentFolderId && (
-                    <div className="mb-4">
+            {/* Breadcrumbs & Navigation */}
+            <div className="flex items-center gap-2 mb-6 text-sm text-slate-400 overflow-x-auto pb-2">
+                <button
+                    onClick={() => navigateTo(null)}
+                    className={`hover:text-indigo-400 transition-colors ${!currentFolderId ? 'text-indigo-400 font-medium' : ''}`}
+                >
+                    Home
+                </button>
+                {breadcrumbs.map((crumb) => (
+                    <div key={crumb.id} className="flex items-center gap-2">
+                        <ChevronRight size={14} />
                         <button
-                            onClick={() => navigateTo(breadcrumbs.length > 1 ? breadcrumbs[breadcrumbs.length - 2].id : null)}
-                            className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                            onClick={() => navigateTo(crumb.id)}
+                            className={`hover:text-indigo-400 transition-colors ${crumb.id === currentFolderId ? 'text-indigo-400 font-medium' : ''}`}
                         >
-                            <ArrowLeft size={12} /> Back to parent
+                            {crumb.name}
                         </button>
                     </div>
-                )}
+                ))}
+            </div>
 
-                <div className="flex-1 overflow-y-auto pb-20 custom-scrollbar">
-                    {isLoading ? (
-                        <div className="text-center py-20 text-slate-500">Loading directory...</div>
-                    ) : (filteredNotes.length === 0 && filteredFolders.length === 0) ? (
-                        <div className="flex flex-col items-center justify-center h-64 text-slate-500 border-2 border-dashed border-slate-800 rounded-xl">
-                            <p>{searchQuery ? 'No matching items found' : 'This folder is empty.'}</p>
+            {/* Content Area */}
+            <div className="flex-1 overflow-y-auto pb-20">
+                {isLoading ? (
+                    <div className="flex items-center justify-center h-40 text-slate-500">Loading...</div>
+                ) : (
+                    <>
+                        {/* Folders Grid */}
+                        {folders.length > 0 && (
+                            <div className="mb-8">
+                                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Folders</h3>
+                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                                    {folders.map(folder => (
+                                        <button
+                                            key={folder.id}
+                                            onClick={() => navigateTo(folder.id)}
+                                            className="group flex flex-col items-center justify-center p-6 bg-slate-900/50 border border-slate-800 rounded-xl hover:bg-slate-800 hover:border-indigo-500/50 transition-all"
+                                        >
+                                            <FolderIcon size={32} className="text-indigo-500/80 mb-3 group-hover:scale-110 transition-transform" fill="currentColor" fillOpacity={0.2} />
+                                            <span className="text-sm font-medium text-slate-300 group-hover:text-white truncate w-full text-center">{folder.name}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Notes Grid */}
+                        <div className="mb-8">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Notes</h3>
+                                <span className="text-xs text-slate-600">{notes.length} notes</span>
+                            </div>
+
+                            {notes.length === 0 && folders.length === 0 && (
+                                <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-slate-800 rounded-2xl bg-slate-900/20">
+                                    <div className="p-4 bg-slate-800 rounded-full mb-4">
+                                        <FileText size={32} className="text-slate-600" />
+                                    </div>
+                                    <p className="text-slate-500 font-medium">No notes in this folder</p>
+                                    <button
+                                        onClick={handleCreateNote}
+                                        className="mt-4 text-indigo-400 hover:text-indigo-300 text-sm font-medium"
+                                    >
+                                        Create your first note
+                                    </button>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                                {notes.map(note => (
+                                    <div
+                                        key={note.id}
+                                        onClick={() => handleOpenNote(note)}
+                                        className="group bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-500/10 transition-all cursor-pointer flex flex-col h-48 relative"
+                                    >
+                                        <h4 className="font-bold text-slate-200 mb-2 line-clamp-2 leading-tight pr-6">{note.title || 'Untitled Note'}</h4>
+                                        <div
+                                            className="text-sm text-slate-400 line-clamp-4 prose prose-invert prose-sm"
+                                            dangerouslySetInnerHTML={{ __html: note.content || '<p class="opacity-50 italic">No content</p>' }}
+                                        />
+                                        <div className="mt-auto pt-4 flex items-center justify-between text-xs text-slate-600">
+                                            <span>{new Date(note.updated_at).toLocaleDateString()}</span>
+                                        </div>
+
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleDeleteNote(note.id); }}
+                                            className="absolute top-4 right-4 text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-500/10 rounded"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                    ) : (
-                        <div className="space-y-8">
-                            {/* Folders Section */}
-                            {filteredFolders.length > 0 && (
-                                <div>
-                                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 pl-1">Folders</h3>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                                        {filteredFolders.map(folder => (
-                                            <DroppableFolder
-                                                key={folder.id}
-                                                folder={folder}
-                                                onClick={() => navigateTo(folder.id)}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+                    </>
+                )}
+            </div>
 
-                            {/* Notes Section */}
-                            {filteredNotes.length > 0 && (
-                                <div>
-                                    {filteredFolders.length > 0 && <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 pl-1">Notes</h3>}
-                                    <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
-                                        {filteredNotes.map(note => (
-                                            <DraggableNote
-                                                key={note.id}
-                                                note={note}
-                                                onClick={() => openEditNoteModal(note)}
-                                                onDelete={(e) => handleDeleteNote(e, note.id)}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+            {/* Note Editor Modal */}
+            <Modal
+                isOpen={isCreateModalOpen}
+                onClose={handleCloseModal}
+                maxWidth="4xl"
+                title={
+                    <div className="flex items-center gap-3 max-w-xl">
+                        <span className="truncate text-lg font-semibold text-slate-100">
+                            {isEditingMode
+                                ? (editingNote ? 'Edit Note' : 'New Note')
+                                : (editingNote?.title || 'Untitled Note')
+                            }
+                        </span>
+                        {!isEditingMode && editingNote && (
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded-full shrink-0 border border-indigo-500/30">Read Only</span>
+                        )}
+                    </div>
+                }
+                headerAction={
+                    // Edit Toggle Button in Header
+                    editingNote ? (
+                        <button
+                            onClick={() => setIsEditingMode(!isEditingMode)}
+                            className={`
+                                p-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium
+                                ${isEditingMode
+                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                                    : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+                                }
+                            `}
+                            title={isEditingMode ? "Finish Editing" : "Edit Note"}
+                        >
+                            <Pencil size={16} />
+                            <span className="hidden sm:inline">{isEditingMode ? 'Editing' : 'Edit'}</span>
+                        </button>
+                    ) : null
+                }
+            >
+                <div className="flex flex-col h-[70vh]">
+                    {/* Title Input - Only in Edit Mode */}
+                    {isEditingMode && (
+                        <input
+                            type="text"
+                            placeholder="Note Title"
+                            className="bg-transparent text-2xl font-bold text-white border-none focus:ring-0 px-0 mb-4 placeholder:text-slate-600"
+                            value={noteTitle}
+                            onChange={(e) => setNoteTitle(e.target.value)}
+                            autoFocus={!editingNote}
+                        />
+                    )}
+
+                    <div className="flex-1 overflow-hidden bg-slate-950/50 rounded-xl border border-slate-800/50">
+                        <RichTextEditor
+                            content={noteContent}
+                            onChange={setNoteContent}
+                            editable={isEditingMode}
+                            isExpanded={true}
+                        />
+                    </div>
+
+                    {isEditingMode && (
+                        <div className="flex justify-end gap-3 pt-6 shrink-0">
+                            <button
+                                onClick={handleCloseModal}
+                                className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSaveNote}
+                                className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-2 rounded-lg font-medium transition-colors shadow-lg shadow-indigo-600/20"
+                            >
+                                Save Note
+                            </button>
                         </div>
                     )}
                 </div>
+            </Modal>
 
-                <DragOverlay>
-                    {activeDraggable ? (
-                        <div className="opacity-80 rotate-2 scale-105">
-                            <NoteCard note={activeDraggable} onClick={() => { }} onDelete={(e) => e.stopPropagation()} />
-                        </div>
-                    ) : null}
-                </DragOverlay>
-
-                <Modal
-                    isOpen={isNoteModalOpen}
-                    onClose={() => {
-                        setIsNoteModalOpen(false);
-                        setIsEditorExpanded(false); // Reset on close
-                        setIsEditingMode(false);
-                    }}
-                    title={
-                        <div className="flex items-center gap-2 max-w-xl">
-                            <span className="truncate">
-                                {isEditingMode
-                                    ? (editingNote ? 'Edit Note' : 'New Note')
-                                    : (editingNote?.title || 'Untitled Note')
-                                }
-                            </span>
-                            {!isEditingMode && editingNote && (
-                                <span className="text-xs font-normal text-slate-500 bg-slate-800 px-2 py-0.5 rounded-full shrink-0">Read Only</span>
-                            )}
-                        </div>
-                    }
-                    maxWidth={isEditorExpanded ? 'max-w-5xl' : 'max-w-xl'}
-                    headerAction={
-                        <div className="flex items-center gap-1">
-                            {!isEditingMode && editingNote && (
-                                <button
-                                    onClick={() => setIsEditingMode(true)}
-                                    title="Edit Note"
-                                    className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
-                                >
-                                    <Pencil size={18} />
-                                </button>
-                            )}
-                            <button
-                                onClick={() => setIsEditorExpanded(!isEditorExpanded)}
-                                title={isEditorExpanded ? "Collapse View" : "Expand View"}
-                                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
-                            >
-                                {isEditorExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-                            </button>
-                        </div>
-                    }
-                >
-                    <div className="space-y-4">
-                        {isEditingMode && (
-                            <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-1">Title</label>
-                                <input
-                                    type="text"
-                                    value={title}
-                                    onChange={(e) => setTitle(e.target.value)}
-                                    className="w-full bg-slate-800 border-none rounded-lg px-4 py-2 text-white placeholder:text-slate-600 focus:ring-2 focus:ring-indigo-500/50"
-                                    placeholder="Note title"
-                                />
-                            </div>
-                        )}
-                        <div>
-                            <label className="block text-sm font-medium text-slate-400 mb-1">Content</label>
-                            <RichTextEditor
-                                content={editorContent}
-                                onChange={setEditorContent}
-                                isExpanded={isEditorExpanded}
-                                editable={isEditingMode} // Pass editable prop
-                            />
-                        </div>
-                        {isEditingMode && (
-                            <div className="flex justify-end gap-3 pt-2">
-                                <button
-                                    onClick={handleSaveNote}
-                                    className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg font-medium transition-colors shadow-lg shadow-indigo-600/20"
-                                >
-                                    Save Note
-                                </button>
-                            </div>
-                        )}
+            {/* New Folder Modal */}
+            <Modal
+                isOpen={isFolderModalOpen}
+                onClose={() => setIsFolderModalOpen(false)}
+                title="Create New Folder"
+                maxWidth="sm"
+            >
+                <div className="space-y-4">
+                    <input
+                        autoFocus
+                        type="text"
+                        placeholder="Folder Name"
+                        className="w-full bg-slate-800 border-none rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500"
+                        value={newFolderName}
+                        onChange={e => setNewFolderName(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleCreateFolder()}
+                    />
+                    <div className="flex justify-end gap-3 pt-2">
+                        <button
+                            onClick={() => setIsFolderModalOpen(false)}
+                            className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleCreateFolder}
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-lg shadow-indigo-600/20"
+                        >
+                            Create Folder
+                        </button>
                     </div>
-                </Modal>
-            </div>
-        </DndContext>
-    )
-}
-
-// Helper for breadcrumbs (optional: make them droppable too? Future task)
-function DropZoneBreadcrumb({ name, onClick, active }: { name: string, onClick: () => void, active: boolean }) {
-    return (
-        <button
-            onClick={onClick}
-            className={`hover:text-white transition-colors ${active ? 'text-white font-bold' : ''}`}
-        >
-            {name}
-        </button>
-    )
+                </div>
+            </Modal>
+        </div>
+    );
 }

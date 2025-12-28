@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { useWorkspace } from '../../../contexts/WorkspaceContext';
 import type { Note, Folder } from '../types';
 
 export interface Breadcrumb {
@@ -15,6 +16,8 @@ export function useFileSystem(initialFolderId: string | null = null) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const { workspace } = useWorkspace();
+
     const fetchDirectory = useCallback(async (folderId: string | null) => {
         setIsLoading(true);
         setError(null);
@@ -23,6 +26,7 @@ export function useFileSystem(initialFolderId: string | null = null) {
             let foldersQuery = supabase
                 .from('folders')
                 .select('*')
+                .eq('workspace', workspace) // Filter by workspace
                 .order('name');
 
             if (folderId) {
@@ -39,6 +43,7 @@ export function useFileSystem(initialFolderId: string | null = null) {
             let notesQuery = supabase
                 .from('notes')
                 .select('*')
+                .eq('workspace', workspace) // Filter by workspace
                 .order('updated_at', { ascending: false });
 
             if (folderId) {
@@ -68,12 +73,12 @@ export function useFileSystem(initialFolderId: string | null = null) {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [workspace]); // Re-fetch when workspace changes
 
     // Initial load and on navigation change
     useEffect(() => {
         fetchDirectory(currentFolderId);
-    }, [currentFolderId, fetchDirectory]);
+    }, [currentFolderId, fetchDirectory]); // fetchDirectory depends on workspace
 
     const navigateTo = (folderId: string | null) => {
         setCurrentFolderId(folderId);
@@ -89,7 +94,8 @@ export function useFileSystem(initialFolderId: string | null = null) {
                 .insert([{
                     name,
                     parent_id: currentFolderId,
-                    user_id: user.id
+                    user_id: user.id,
+                    workspace // Inject workspace
                 }]);
 
             if (error) throw error;

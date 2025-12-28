@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { PageHeader } from '../../components/PageHeader';
+import { useWorkspace } from '../../contexts/WorkspaceContext';
 import {
     DndContext,
     DragOverlay,
@@ -25,6 +26,8 @@ import { Edit2, Trash2, X } from 'lucide-react';
 import { useGoogleTasks } from '../../hooks/useGoogleTasks';
 
 export function TodoBoard() {
+    const { workspace } = useWorkspace();
+
     // Fixed Columns (Strict Mode)
     const columns = [
         { title: 'Today', status: 'Today' },
@@ -68,7 +71,7 @@ export function TodoBoard() {
             fetchData();
         };
         init();
-    }, []);
+    }, [workspace]); // Refetch on workspace change
 
     async function fetchData() {
         try {
@@ -83,6 +86,7 @@ export function TodoBoard() {
                     )
                 `)
                 .eq('is_archived', false)
+                .eq('workspace', workspace) // FILTER BY WORKSPACE
                 .order('order', { ascending: true })
                 .order('created_at', { ascending: false });
 
@@ -325,7 +329,16 @@ export function TodoBoard() {
         // 1. Insert Todo
         const { data, error } = await supabase
             .from('todos')
-            .insert([{ title, description, status, completed: false, duration, order, due_date }])
+            .insert([{
+                title,
+                description,
+                status,
+                completed: false,
+                duration,
+                order,
+                due_date,
+                workspace // INJECT WORKSPACE
+            }])
             .select()
             .single();
 

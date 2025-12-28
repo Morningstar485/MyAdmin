@@ -14,14 +14,18 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { PageHeader } from '../../components/PageHeader';
 import { supabase } from '../../lib/supabase';
+import { useWorkspace } from '../../contexts/WorkspaceContext';
 import { type Plan, type PlanStatus, type Todo } from '../todo/types';
 import { PlanCard } from './components/PlanCard';
 import { TaskCard } from '../todo/components/TaskCard';
 import { Plus } from 'lucide-react';
 import { Modal } from '../../components/Modal';
 import { PlanDetailsModal } from './components/PlanDetailsModal';
+import { AddResourceButton } from '../resources/components/AddResourceButton';
 
 export function PlannerBoard() {
+    const { workspace } = useWorkspace();
+
     // Dynamic Columns State
     const [columns, setColumns] = useState<{ title: string; status: PlanStatus }[]>([]);
 
@@ -60,13 +64,14 @@ export function PlannerBoard() {
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [workspace]); // Refetch on workspace change
 
     async function fetchData() {
         // 1. Fetch Columns
         const { data: columnsData, error: columnsError } = await supabase
             .from('plan_columns')
             .select('*')
+            .eq('workspace', workspace)
             .order('position');
 
         if (columnsError) console.error('Error fetching columns:', columnsError);
@@ -83,22 +88,30 @@ export function PlannerBoard() {
         setColumns(loadedColumns);
 
         // Fetch Plans
-        const { data: plansData } = await supabase.from('plans').select('*').order('created_at');
+        const { data: plansData } = await supabase
+            .from('plans')
+            .select('*')
+            .eq('workspace', workspace)
+            .order('created_at');
         if (plansData) setPlans((plansData as Plan[]).filter(p => p.status !== 'Archived'));
 
         // Fetch Notes (Lightweight)
-        const { data: notesData } = await supabase.from('notes').select('id, plan_id');
+        const { data: notesData } = await supabase
+            .from('notes')
+            .select('id, plan_id')
+            .eq('workspace', workspace);
+
         if (notesData) setNotes(notesData);
 
-        // Fetch Todos (needed for unallocated list + progress calc)
+        // Fetch Todos
         const { data: todosData } = await supabase
             .from('todos')
             .select(`
                 *,
                 todo_tags ( tag:tags (*) ),
                 plan:plans (*)
-            `);
-        // Removed .eq('is_archived', false) to include flushed tasks in stats/mindmap
+            `)
+            .eq('workspace', workspace);
 
         if (todosData) {
             const formattedTodos = todosData.map((t: any) => ({
@@ -107,7 +120,6 @@ export function PlannerBoard() {
             })) as Todo[];
 
             setAllTasks(formattedTodos);
-            // Only show active (non-archived), incomplete tasks in the unallocated sidebar
             setUnallocatedTasks(formattedTodos.filter(t => !t.plan_id && !t.completed && !t.is_archived));
         }
     }
@@ -115,13 +127,13 @@ export function PlannerBoard() {
     const handleCreatePlan = async () => {
         if (!newPlanTitle.trim()) return;
 
-        // Use first column as default status, or 'Not Started' fallback
         const defaultStatus = columns.length > 0 ? columns[0].status : 'Not Started';
 
         const newPlan = {
             title: newPlanTitle,
             description: newPlanDescription,
             status: defaultStatus,
+            workspace
         };
 
         const { data, error } = await supabase.from('plans').insert([newPlan]).select().single();
@@ -205,7 +217,6 @@ export function PlannerBoard() {
     }
 
     const handleUpdatePlan = async (planId: string, updates: Partial<Plan>) => {
-        // Optimistic
         setPlans(prev => prev.map(p => p.id === planId ? { ...p, ...updates } : p));
         const { error } = await supabase.from('plans').update(updates).eq('id', planId);
         if (error) {
@@ -215,7 +226,6 @@ export function PlannerBoard() {
     };
 
     const handleAssignTask = async (taskId: string, planId: string) => {
-        // Optimistic
         setAllTasks(prev => prev.map(t => t.id === taskId ? { ...t, plan_id: planId } : t));
         setUnallocatedTasks(prev => prev.filter(t => t.id !== taskId));
 
@@ -254,7 +264,6 @@ export function PlannerBoard() {
     const handleToggleTask = async (taskId: string, currentStatus: boolean) => {
         const newStatus = !currentStatus;
 
-        // Optimistic Update
         setAllTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: newStatus } : t));
         setUnallocatedTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: newStatus } : t));
 
@@ -266,20 +275,16 @@ export function PlannerBoard() {
             return;
         }
 
-        // Auto-Move Plan to Completed if all tasks are done
-        if (newStatus) { // Only check if we just completed a task
+        if (newStatus) {
             const task = allTasks.find(t => t.id === taskId);
             if (task && task.plan_id) {
                 const planTasks = allTasks.filter(t => t.plan_id === task.plan_id);
-                // Check if ALL OTHER tasks are completed (plus the one we just toggled, which is now true locally)
                 const allCompleted = planTasks.every(t => t.id === taskId ? true : t.completed);
 
                 if (allCompleted) {
                     const plan = plans.find(p => p.id === task.plan_id);
-                    // Only move if not already completed/archived
                     if (plan && plan.status !== 'Completed' && plan.status !== 'Archived') {
                         handleUpdatePlan(plan.id, { status: 'Completed' });
-                        // Optional: Notify user or just let it happen naturally
                     }
                 }
             }
@@ -291,7 +296,6 @@ export function PlannerBoard() {
     const handleDeletePlan = async (planId: string) => {
         if (!confirm('Are you sure you want to delete this plan? This will effectively archive it.')) return;
 
-        // Optimistic
         setPlans(prev => prev.filter(p => p.id !== planId));
 
         const { error: taskError } = await supabase
@@ -311,21 +315,15 @@ export function PlannerBoard() {
     const handleFlush = async () => {
         const completedPlans = plans.filter(p => p.status === 'Completed');
 
-        // STRICT RULE: Only flush plans where ALL tasks are completed
         const plansToFlush = completedPlans.filter(p => {
             const planTasks = allTasks.filter(t => t.plan_id === p.id && !t.is_archived);
-            // If plan has no tasks, it can be flushed. If it has tasks, they MUST be completed.
             return planTasks.length === 0 || planTasks.every(t => t.completed);
         });
 
         const incompletePlans = completedPlans.filter(p => !plansToFlush.includes(p));
         if (incompletePlans.length > 0) {
-            alert(`Cannot flush ${incompletePlans.length} plans because they still have incomplete tasks. Please complete all tasks first.`);
-            return; // Stop if there are invalid plans, or continue with valid ones? User said "else show an error". 
-            // Let's flush the valid ones and warn about the others? 
-            // Usually "Flush" implies a bulk action. Let's just flush the valid ones but warn.
-            // Re-reading user request: "revert to the plan needing all of the tasks being completed to be able to be flushed, else it should show an error"
-            // This implies strict blocking.
+            alert(`Cannot flush ${incompletePlans.length} plans because they still have incomplete tasks.`);
+            return;
         }
 
         if (plansToFlush.length === 0) {
@@ -337,35 +335,14 @@ export function PlannerBoard() {
 
         const ids = plansToFlush.map(p => p.id);
 
-        // 1. Archive Tasks
         setAllTasks(prev => prev.map(t => ids.includes(t.plan_id || '') ? { ...t, is_archived: true } : t));
 
-        const { error: tasksError } = await supabase
-            .from('todos')
-            .update({ is_archived: true })
-            .in('plan_id', ids);
+        await supabase.from('todos').update({ is_archived: true }).in('plan_id', ids);
 
-        if (tasksError) {
-            console.error('Error archiving tasks:', tasksError);
-            alert('Failed to archive tasks');
-            return;
-        }
+        setPlans(prev => prev.filter(p => !ids.includes(p.id)));
 
-        // 2. Archive Plans (Flush the Plan itself)
-        setPlans(prev => prev.filter(p => !ids.includes(p.id))); // Remove from view
-
-        const { error: plansError } = await supabase
-            .from('plans')
-            .update({ status: 'Archived' as any }) // Cast to any if type is stricter
-            .in('id', ids);
-
-        if (plansError) {
-            console.error('Error archiving plans:', plansError);
-            // Revert local state if needed, or just fetch
-            fetchData();
-        }
+        await supabase.from('plans').update({ status: 'Archived' as any }).in('id', ids);
     };
-
 
     return (
         <DndContext
@@ -380,6 +357,7 @@ export function PlannerBoard() {
                     description="Manage major projects and allocate tasks."
                 >
                     <div className="flex items-center gap-2 lg:gap-3 flex-wrap justify-end">
+                        {workspace === 'learning' && <AddResourceButton />}
                         <div className="flex items-center bg-slate-800/50 rounded-lg p-1 border border-slate-700/50 mr-2">
                             <button
                                 onClick={() => setIsEditing(!isEditing)}
@@ -396,7 +374,6 @@ export function PlannerBoard() {
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-trash-2"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></svg>
                             </button>
                         </div>
-
                         <button
                             onClick={() => setIsUnallocatedOpen(!isUnallocatedOpen)}
                             className={`
@@ -409,7 +386,6 @@ export function PlannerBoard() {
                         >
                             <span className="bg-indigo-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{unallocatedTasks.length}</span>
                             <span className="hidden sm:inline">Miscellaneous Tasks</span>
-                            <span className="sm:hidden">Tasks</span>
                         </button>
                         <button
                             onClick={() => setIsCreateModalOpen(true)}
@@ -417,13 +393,11 @@ export function PlannerBoard() {
                         >
                             <Plus size={16} />
                             <span className="hidden sm:inline">New Plan</span>
-                            <span className="sm:hidden">New</span>
                         </button>
                     </div>
                 </PageHeader>
 
                 <div className="flex-1 overflow-x-hidden overflow-y-auto lg:overflow-x-auto lg:overflow-y-hidden pb-6 relative">
-                    {/* Main Board: Planner Columns */}
                     <div className="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:min-w-[800px] min-w-full pb-20 lg:pb-0">
                         {columns.map(col => (
                             <DroppableColumn
@@ -439,7 +413,6 @@ export function PlannerBoard() {
                         ))}
                     </div>
 
-                    {/* Floating Sidebar: Miscellaneous Tasks */}
                     {isUnallocatedOpen && (
                         <div className={`
                             bg-slate-900 border-slate-700 flex flex-col shadow-2xl z-40
@@ -687,3 +660,11 @@ function DroppablePlan({
         </div>
     );
 }
+
+// Add CSS for custom scrollbar if not already globally available
+// <style>{`
+//   .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+//   .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+//   .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+//   .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+// `}</style>

@@ -6,13 +6,20 @@ import { NotesBoard } from './features/notes/NotesBoard';
 import { Dashboard } from './features/dashboard/Dashboard';
 import { SettingsBoard } from './features/settings/SettingsBoard';
 import { PlannerBoard } from './features/planner/PlannerBoard';
+import { LibraryBoard } from './features/resources/LibraryBoard';
+import { StudyPage } from './features/study/StudyPage';
 import { LoginScreen } from './components/LoginScreen';
 import type { Session } from '@supabase/supabase-js';
 import { NavigationProvider, useNavigation } from './contexts/NavigationContext';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 function AppContent() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // We still use internal View state for the main dashboard to preserve existing logic
+  // But we sync it with the URL ideally, or just keep it simple.
+  // For now, let's keep the View state for Sidebar items.
   const [currentView, setCurrentView] = useState<View>(() => {
     const saved = localStorage.getItem('currentView');
     return (saved as View) || 'dashboard';
@@ -54,6 +61,8 @@ function AppContent() {
         return <NotesBoard />;
       case 'settings':
         return <SettingsBoard />;
+      case 'library':
+        return <LibraryBoard />;
       default:
         return <Dashboard />;
     }
@@ -76,9 +85,14 @@ function AppContent() {
 
 function App() {
   return (
-    <NavigationProvider>
-      <AppContent />
-    </NavigationProvider>
+    <BrowserRouter>
+      <NavigationProvider>
+        <Routes>
+          <Route path="/study/:id" element={<StudyPage />} />
+          <Route path="/*" element={<AppContent />} />
+        </Routes>
+      </NavigationProvider>
+    </BrowserRouter>
   );
 }
 
