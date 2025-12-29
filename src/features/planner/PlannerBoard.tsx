@@ -21,10 +21,10 @@ import { TaskCard } from '../todo/components/TaskCard';
 import { Plus } from 'lucide-react';
 import { Modal } from '../../components/Modal';
 import { PlanDetailsModal } from './components/PlanDetailsModal';
-import { AddResourceButton } from '../resources/components/AddResourceButton';
 
-export function PlannerBoard() {
-    const { workspace } = useWorkspace();
+export function PlannerBoard({ workspace: workspaceProp }: { workspace?: string }) {
+    const { workspace: workspaceContext } = useWorkspace();
+    const workspace = workspaceProp || workspaceContext;
 
     // Dynamic Columns State
     const [columns, setColumns] = useState<{ title: string; status: PlanStatus }[]>([]);
@@ -357,7 +357,6 @@ export function PlannerBoard() {
                     description="Manage major projects and allocate tasks."
                 >
                     <div className="flex items-center gap-2 lg:gap-3 flex-wrap justify-end">
-                        {workspace === 'learning' && <AddResourceButton />}
                         <div className="flex items-center bg-slate-800/50 rounded-lg p-1 border border-slate-700/50 mr-2">
                             <button
                                 onClick={() => setIsEditing(!isEditing)}

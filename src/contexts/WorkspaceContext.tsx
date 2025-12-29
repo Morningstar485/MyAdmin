@@ -3,7 +3,7 @@ import { createContext, useContext, useState, type ReactNode } from 'react';
 export type WorkspaceType = 'work' | 'learning';
 
 export interface WorkspaceTheme {
-    primary: string;           // 'indigo' | 'teal'
+    primary: string;           // 'indigo', 'emerald'
     accent: string;            // for tailored classes like 'text-indigo-400'
     label: string;
 }
@@ -23,17 +23,14 @@ const THEMES: Record<WorkspaceType, WorkspaceTheme> = {
         label: 'Work'
     },
     learning: {
-        primary: 'teal', // or emerald
-        accent: 'teal',
+        primary: 'emerald',
+        accent: 'emerald',
         label: 'Learning'
     }
 };
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
-    const [workspace, setWorkspaceState] = useState<WorkspaceType>(() => {
-        const stored = localStorage.getItem('myadmin_workspace');
-        return (stored === 'work' || stored === 'learning') ? stored : 'work';
-    });
+    const [workspace, setWorkspaceState] = useState<WorkspaceType>('work');
 
     const setWorkspace = (ws: WorkspaceType) => {
         setWorkspaceState(ws);

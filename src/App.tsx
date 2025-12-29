@@ -6,20 +6,20 @@ import { NotesBoard } from './features/notes/NotesBoard';
 import { Dashboard } from './features/dashboard/Dashboard';
 import { SettingsBoard } from './features/settings/SettingsBoard';
 import { PlannerBoard } from './features/planner/PlannerBoard';
-import { LibraryBoard } from './features/resources/LibraryBoard';
-import { StudyPage } from './features/study/StudyPage';
 import { LoginScreen } from './components/LoginScreen';
 import type { Session } from '@supabase/supabase-js';
 import { NavigationProvider, useNavigation } from './contexts/NavigationContext';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { LearningWorkspace } from './features/learning/LearningWorkspace';
+import { useWorkspace } from './contexts/WorkspaceContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function AppContent() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const { workspace } = useWorkspace();
 
   // We still use internal View state for the main dashboard to preserve existing logic
-  // But we sync it with the URL ideally, or just keep it simple.
-  // For now, let's keep the View state for Sidebar items.
   const [currentView, setCurrentView] = useState<View>(() => {
     const saved = localStorage.getItem('currentView');
     return (saved as View) || 'dashboard';
@@ -50,6 +50,10 @@ function AppContent() {
   };
 
   const renderContent = () => {
+    if (workspace === 'learning') {
+      return <LearningWorkspace currentView={currentView} />;
+    }
+
     switch (currentView) {
       case 'dashboard':
         return <Dashboard />;
@@ -59,10 +63,10 @@ function AppContent() {
         return <TodoBoard />;
       case 'notes':
         return <NotesBoard />;
+      case 'library':
+        return <Dashboard />;
       case 'settings':
         return <SettingsBoard />;
-      case 'library':
-        return <LibraryBoard />;
       default:
         return <Dashboard />;
     }
@@ -78,7 +82,18 @@ function AppContent() {
 
   return (
     <AppShell currentView={currentView} onNavigate={handleNavigate}>
-      {renderContent()}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={workspace + currentView}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.2 }}
+          className="h-full w-full overflow-hidden"
+        >
+          {renderContent()}
+        </motion.div>
+      </AnimatePresence>
     </AppShell>
   );
 }
@@ -88,7 +103,6 @@ function App() {
     <BrowserRouter>
       <NavigationProvider>
         <Routes>
-          <Route path="/study/:id" element={<StudyPage />} />
           <Route path="/*" element={<AppContent />} />
         </Routes>
       </NavigationProvider>

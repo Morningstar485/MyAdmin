@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LayoutDashboard, CheckSquare, FileText, Settings, Calendar, Menu, LogOut, Briefcase, GraduationCap, ChevronDown, BookOpen } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, FileText, Settings, Calendar, Menu, LogOut, GraduationCap, Briefcase, BookOpen } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 
@@ -14,20 +14,11 @@ interface AppShellProps {
 export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
     const [isCollapsed, setIsCollapsed] = useState(false); // Desktop Mini
     const [isMobileOpen, setIsMobileOpen] = useState(false); // Mobile Drawer
-    const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
-
     const { workspace, setWorkspace, theme } = useWorkspace();
 
-    const isWork = workspace === 'work';
-
-    // Tailwind classes need to be static for JIT, but we can dynamic them via explicit classes or style vars if complicated.
-    // However, requested simple color swap: Indigo -> Teal. 
-    // We will use template strings since Tailwind scanner usually picks them up if full class name is present, 
-    // OR we can make a helper. For safety, let's map them explicitly or assume standard palette. 
-
-    const primaryBg = isWork ? 'bg-indigo-600' : 'bg-teal-600';
-    const primaryText = isWork ? 'text-indigo-100' : 'text-teal-100';
-    const primaryShadow = isWork ? 'shadow-indigo-500/20' : 'shadow-teal-500/20'; // Keeping text-white for active
+    const primaryBg = `bg-${theme.primary}-600`;
+    const primaryText = `text-${theme.primary}-100`;
+    const primaryShadow = `shadow-${theme.primary}-500/20`;
 
     // Explicit Active Class builder
     const getActiveClass = (active: boolean) => active
@@ -87,69 +78,35 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                 <div className={`px-4 mb-6 flex flex-col gap-4 transition-all duration-300 ${isCollapsed ? 'items-center' : ''}`}>
                     {/* Brand */}
                     <div className={`flex items-center ${isCollapsed ? 'justify-center' : ''}`}>
-                        <div className={`w-10 h-10 ${primaryBg} rounded-xl flex items-center justify-center font-bold text-xl shadow-lg shrink-0 transition-colors duration-300`}>M</div>
+                        <div className={`w-10 h-10 ${primaryBg} rounded-xl flex items-center justify-center font-bold text-xl shadow-lg shrink-0 transition-colors duration-300`}>
+                            {workspace === 'work' ? 'W' : 'L'}
+                        </div>
                         <span className={`ml-3 font-bold text-xl tracking-tight ${primaryText} overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'lg:w-0 lg:opacity-0 lg:hidden' : 'w-auto opacity-100'}`}>
                             MyAdmin
                         </span>
                     </div>
 
-                    {/* Workspace Switcher */}
-                    <div className="relative w-full">
-                        <button
-                            onClick={() => !isCollapsed && setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen)}
-                            className={`
-                                w-full flex items-center gap-3 p-2 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 transition-colors
-                                ${isCollapsed ? 'justify-center border-none bg-transparent hover:bg-transparent cursor-default' : ''}
-                            `}
-                        >
-                            <div className={`p-1.5 rounded-md ${isWork ? 'bg-indigo-500/10 text-indigo-400' : 'bg-teal-500/10 text-teal-400'} shrink-0`}>
-                                {isWork ? <Briefcase size={18} /> : <GraduationCap size={18} />}
-                            </div>
-
-                            {!isCollapsed && (
-                                <>
-                                    <div className="flex flex-col items-start flex-1 overflow-hidden">
-                                        <span className="text-xs font-semibold text-slate-200 truncate">{theme.label}</span>
-                                        <span className="text-[10px] text-slate-500 truncate">Workspace</span>
-                                    </div>
-                                    <ChevronDown size={14} className={`text-slate-500 transition-transform ${isWorkspaceMenuOpen ? 'rotate-180' : ''}`} />
-                                </>
-                            )}
-                        </button>
-
-                        {/* Dropdown Menu */}
-                        {isWorkspaceMenuOpen && !isCollapsed && (
-                            <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-700 rounded-xl shadow-xl overflow-hidden z-50">
-                                <button
-                                    onClick={() => { setWorkspace('work'); setIsWorkspaceMenuOpen(false); }}
-                                    className="w-full flex items-center gap-3 px-3 py-3 hover:bg-slate-800 transition-colors text-left"
-                                >
-                                    <div className="p-1.5 rounded-md bg-indigo-500/10 text-indigo-400">
-                                        <Briefcase size={16} />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-medium text-slate-200">Work</span>
-                                        <span className="text-[10px] text-slate-500">Productivity</span>
-                                    </div>
-                                    {isWork && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-500" />}
-                                </button>
-                                <div className="h-px bg-slate-800" />
-                                <button
-                                    onClick={() => { setWorkspace('learning'); setIsWorkspaceMenuOpen(false); }}
-                                    className="w-full flex items-center gap-3 px-3 py-3 hover:bg-slate-800 transition-colors text-left"
-                                >
-                                    <div className="p-1.5 rounded-md bg-teal-500/10 text-teal-400">
-                                        <GraduationCap size={16} />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-medium text-slate-200">Learning</span>
-                                        <span className="text-[10px] text-slate-500">Study & Growth</span>
-                                    </div>
-                                    {!isWork && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-teal-500" />}
-                                </button>
-                            </div>
-                        )}
-
+                    {/* Workspace Selector */}
+                    <div className={`flex flex-col gap-1 ${isCollapsed ? 'hidden' : 'block'}`}>
+                        <label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold px-2 mb-1">Workspace</label>
+                        <div className="flex bg-slate-950/50 p-1 rounded-xl border border-slate-800">
+                            <button
+                                onClick={() => setWorkspace('work')}
+                                className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-xs font-semibold过渡 transition-all ${workspace === 'work' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                                title="Switch to Work Workspace"
+                            >
+                                <Briefcase size={14} />
+                                <span>Work</span>
+                            </button>
+                            <button
+                                onClick={() => setWorkspace('learning')}
+                                className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-xs font-semibold transition-all ${workspace === 'learning' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                                title="Switch to Learning Workspace"
+                            >
+                                <GraduationCap size={14} />
+                                <span>Learning</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -186,7 +143,7 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                         collapsed={isCollapsed}
                         activeClass={getActiveClass(currentView === 'notes')}
                     />
-                    {!isWork && (
+                    {workspace === 'learning' && (
                         <NavItem
                             icon={<BookOpen size={20} />}
                             label="Library"

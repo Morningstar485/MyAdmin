@@ -8,7 +8,10 @@ import type { Note } from './types';
 import { Folder as FolderIcon, FileText, ChevronRight, Pencil, Trash2 } from 'lucide-react';
 import { useWorkspace } from '../../contexts/WorkspaceContext';
 
-export function NotesBoard() {
+export function NotesBoard({ workspace: workspaceProp }: { workspace?: string }) {
+    const { workspace: workspaceContext } = useWorkspace();
+    const workspace = workspaceProp || workspaceContext;
+
     // 1. File System Hook
     const {
         currentFolderId,
@@ -19,9 +22,7 @@ export function NotesBoard() {
         navigateTo,
         createFolder,
         refresh
-    } = useFileSystem();
-
-    const { workspace } = useWorkspace();
+    } = useFileSystem(workspace); // Pass workspace to hook
 
     // 2. Local State
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);

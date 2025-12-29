@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../../lib/supabase';
 import { useWorkspace } from '../../../contexts/WorkspaceContext';
-import { Plan, PlanStatus } from '../../todo/types';
+import type { Plan, PlanStatus } from '../../todo/types';
 
 export function usePlans() {
     const [plans, setPlans] = useState<Plan[]>([]);
@@ -69,7 +69,7 @@ export function usePlans() {
     const [columns, setColumns] = useState<{ title: string; status: PlanStatus }[]>([]);
     const fetchColumns = useCallback(async () => {
         // Columns could be global or workspace specific. Let's make them workspace specific for flexibility.
-        const { data, error } = await supabase
+        const { data } = await supabase
             .from('plan_columns')
             .select('*')
             .eq('workspace', workspace)

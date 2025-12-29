@@ -16,5 +16,7 @@ export interface Note {
     user_id?: string;
     plan_id?: string;
     folder_id?: string | null; // Added for Folder System
+    workspace?: string;
+    resource_id?: string; // UUID of the PDF/Resource for Learning Workspace
 }
 

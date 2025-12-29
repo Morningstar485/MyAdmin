@@ -8,7 +8,7 @@ export interface Breadcrumb {
     name: string;
 }
 
-export function useFileSystem(initialFolderId: string | null = null) {
+export function useFileSystem(workspaceProp: string | null = null, initialFolderId: string | null = null) {
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(initialFolderId);
     const [folders, setFolders] = useState<Folder[]>([]);
     const [notes, setNotes] = useState<Note[]>([]);
@@ -16,7 +16,8 @@ export function useFileSystem(initialFolderId: string | null = null) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const { workspace } = useWorkspace();
+    const { workspace: contextWorkspace } = useWorkspace();
+    const workspace = workspaceProp || contextWorkspace;
 
     const fetchDirectory = useCallback(async (folderId: string | null) => {
         setIsLoading(true);

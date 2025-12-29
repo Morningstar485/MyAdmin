@@ -69,7 +69,7 @@ export function useGoogleDrivePicker({ clientId, developerKey }: UseGoogleDriveP
         }
     }, [isGisLoaded, clientId]);
 
-    const openPicker = useCallback((onSelect: (files: any[]) => void) => {
+    const openPicker = useCallback((onSelect: (file: { id: string, name: string, embedUrl: string, mimeType: string }) => void) => {
         if (!isApiLoaded || !tokenClient) {
             console.warn('Google Picker API not fully loaded yet.');
             return;
@@ -86,16 +86,22 @@ export function useGoogleDrivePicker({ clientId, developerKey }: UseGoogleDriveP
 
             const pickerCallback = (data: PickerCallback) => {
                 if (data.action === window.google.picker.Action.PICKED) {
-                    onSelect(data.docs);
+                    const doc = data.docs[0];
+                    onSelect({
+                        id: doc.id,
+                        name: doc.name,
+                        embedUrl: doc.embedUrl,
+                        mimeType: doc.mimeType
+                    });
                 }
             };
 
             const view = new window.google.picker.View(window.google.picker.ViewId.DOCS);
-            view.setMimeTypes('application/pdf,application/vnd.google-apps.document');
+            view.setMimeTypes('application/pdf'); // Only PDFs for now
 
             const picker = new window.google.picker.PickerBuilder()
-                .setDeveloperKey(developerKey)
-                .setAppId(import.meta.env.VITE_GOOGLE_APP_ID)
+                .setDeveloperKey(developerKey.trim())
+                .setAppId((import.meta.env.VITE_GOOGLE_APP_ID || '').trim())
                 .setOAuthToken(accessToken)
                 .addView(view)
                 .addView(new window.google.picker.DocsUploadView()) // Allow uploads
@@ -106,7 +112,6 @@ export function useGoogleDrivePicker({ clientId, developerKey }: UseGoogleDriveP
         };
 
         // Trigger Auth Flow (Popup)
-        // prompt: '' will auto-select if already signed in, providing a seamless flow
         tokenClient.requestAccessToken({ prompt: '' });
 
     }, [isApiLoaded, tokenClient, developerKey]);

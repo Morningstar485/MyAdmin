@@ -24,7 +24,7 @@ const item = {
     show: { opacity: 1, y: 0 }
 };
 
-export function Dashboard() {
+export function Dashboard({ workspace = 'work' }: { workspace?: string }) {
     const [stats, setStats] = useState({
         totalTasks: 0,
         completedTasks: 0,
@@ -55,7 +55,8 @@ export function Dashboard() {
                         todo_tags (
                             tag:tags (*)
                         )
-                    `);
+                    `)
+                    .eq('workspace', workspace); // Filter by workspace
 
                 if (error) throw error;
 
@@ -76,7 +77,7 @@ export function Dashboard() {
 
         fetchDashboardData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [workspace]);
 
     function calculateStats(todos: Todo[]) {
         const totalTasks = todos.length;

@@ -20,8 +20,7 @@ export function PlanCard({
     completedCount,
     noteCount,
     hasMindMap,
-    isEditing,
-    onDelete
+    isEditing
 }: PlanCardProps) {
     // Data for the donut chart
     const remainingCount = Math.max(0, taskCount - completedCount);

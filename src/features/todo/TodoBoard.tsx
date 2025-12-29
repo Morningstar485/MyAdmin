@@ -25,8 +25,9 @@ import { supabase } from '../../lib/supabase';
 import { Edit2, Trash2, X } from 'lucide-react';
 import { useGoogleTasks } from '../../hooks/useGoogleTasks';
 
-export function TodoBoard() {
-    const { workspace } = useWorkspace();
+export function TodoBoard({ workspace: workspaceProp }: { workspace?: string }) {
+    const { workspace: workspaceContext } = useWorkspace();
+    const workspace = workspaceProp || workspaceContext;
 
     // Fixed Columns (Strict Mode)
     const columns = [

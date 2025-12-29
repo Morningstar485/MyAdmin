@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../../lib/supabase';
 import { useWorkspace } from '../../../contexts/WorkspaceContext';
-import { Todo } from '../types';
+import type { Todo } from '../types';
 
 export function useTodos() {
     const [todos, setTodos] = useState<Todo[]>([]);

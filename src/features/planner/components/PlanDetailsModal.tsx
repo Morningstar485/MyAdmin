@@ -291,7 +291,7 @@ export function PlanDetailsModal({
                             </div>
 
                             {isDescriptionEditing ? (
-                                <RichTextEditor content={description} onChange={setDescription} />
+                                <RichTextEditor content={description} onChange={setDescription} isExpanded={false} />
                             ) : (
                                 <div
                                     className="prose prose-invert prose-sm max-w-none text-slate-200"

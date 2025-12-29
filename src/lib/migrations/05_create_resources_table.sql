@@ -1,27 +1,36 @@
--- Create resource_type enum
-CREATE TYPE resource_type AS ENUM ('pdf', 'video', 'link', 'article');
-
 -- Create resources table
-CREATE TABLE IF NOT EXISTS resources (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id),
-  workspace TEXT NOT NULL DEFAULT 'learning',
-  title TEXT NOT NULL,
-  type resource_type NOT NULL,
-  external_id TEXT, -- Google Drive File ID
-  embed_link TEXT,
-  tags TEXT[] DEFAULT '{}',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+CREATE TABLE IF NOT EXISTS public.resources (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) NOT NULL,
+    workspace TEXT NOT NULL DEFAULT 'learning',
+    title TEXT NOT NULL,
+    drive_file_id TEXT UNIQUE,
+    drive_embed_link TEXT,
+    mime_type TEXT,
+    type TEXT DEFAULT 'pdf',
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Indexes
-CREATE INDEX IF NOT EXISTS idx_resources_workspace ON resources(workspace);
-CREATE INDEX IF NOT EXISTS idx_resources_user_id ON resources(user_id);
+-- Enable RLS
+ALTER TABLE public.resources ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies
-ALTER TABLE resources ENABLE ROW LEVEL SECURITY;
+-- Policies for user segregation
+CREATE POLICY "Users can only see their own resources" 
+ON public.resources 
+FOR SELECT 
+USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can CRUD their own resources" ON resources
-  FOR ALL
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can only insert their own resources" 
+ON public.resources 
+FOR INSERT 
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can only update their own resources" 
+ON public.resources 
+FOR UPDATE 
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can only delete their own resources" 
+ON public.resources 
+FOR DELETE 
+USING (auth.uid() = user_id);
