@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
+import { Briefcase, GraduationCap } from 'lucide-react';
 
 export type WorkspaceType = 'work' | 'learning';
 
@@ -6,6 +7,7 @@ export interface WorkspaceTheme {
     primary: string;           // 'indigo', 'emerald'
     accent: string;            // for tailored classes like 'text-indigo-400'
     label: string;
+    icon: ReactNode;
 }
 
 interface WorkspaceContextType {
@@ -20,12 +22,14 @@ const THEMES: Record<WorkspaceType, WorkspaceTheme> = {
     work: {
         primary: 'indigo',
         accent: 'indigo',
-        label: 'Work'
+        label: 'Work',
+        icon: <Briefcase size={18} />
     },
     learning: {
         primary: 'emerald',
         accent: 'emerald',
-        label: 'Learning'
+        label: 'Learning',
+        icon: <GraduationCap size={18} />
     }
 };
 
