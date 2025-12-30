@@ -144,3 +144,34 @@ export async function saveNote(resourceId: string, title: string, content: any):
         return null;
     }
 }
+/**
+ * Deletes multiple resources and their associated notes.
+ * 
+ * @param ids Array of resource UUIDs to delete.
+ */
+export async function deleteResources(ids: string[]): Promise<boolean> {
+    try {
+        if (ids.length === 0) return true;
+
+        // Notes are linked via resource_id. 
+        // We delete notes first (optional if cascade is on, but safer)
+        const { error: notesError } = await supabase
+            .from('notes')
+            .delete()
+            .in('resource_id', ids);
+
+        if (notesError) throw notesError;
+
+        const { error: resourcesError } = await supabase
+            .from('resources')
+            .delete()
+            .in('id', ids);
+
+        if (resourcesError) throw resourcesError;
+
+        return true;
+    } catch (err) {
+        console.error('Error deleting resources:', err);
+        return false;
+    }
+}

@@ -75,6 +75,12 @@ export function useGoogleDrivePicker({ clientId, developerKey }: UseGoogleDriveP
             return;
         }
 
+        // --- DEBUGGING START ---
+        console.log("1. Developer Key Prop:", developerKey);
+        console.log("2. App ID (Project Number):", import.meta.env.VITE_GOOGLE_APP_ID);
+        console.log("3. Access Token:", tokenClient ? "Client Initialized" : "Missing");
+        // --- DEBUGGING END ---
+
         // Callback when user authorizes (or already has)
         tokenClient.callback = async (response: any) => {
             if (response.error !== undefined) {

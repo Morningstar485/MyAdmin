@@ -33,6 +33,8 @@ export function LearningWorkspace({ currentView }: LearningWorkspaceProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilter, setActiveFilter] = useState('All');
 
+    console.log("DEBUG ENV:", import.meta.env.VITE_GOOGLE_API_KEY);
+
     // Google Drive Picker
     const { openPicker, isReady: isPickerReady } = useGoogleDrivePicker({
         clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
