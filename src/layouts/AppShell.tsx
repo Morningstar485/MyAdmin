@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { LayoutDashboard, CheckSquare, FileText, Settings, Calendar, Menu, LogOut, GraduationCap, Briefcase, BookOpen, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, FileText, Settings, Calendar, Menu, LogOut, GraduationCap, Briefcase, BookOpen, ChevronDown, Map } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useWorkspace, type WorkspaceType } from '../contexts/WorkspaceContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export type View = 'tasks' | 'notes' | 'dashboard' | 'settings' | 'planner' | 'library';
+export type View = 'tasks' | 'notes' | 'dashboard' | 'settings' | 'planner' | 'library' | 'roadmap';
 
 interface AppShellProps {
     children: React.ReactNode;
@@ -180,22 +180,35 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                         collapsed={isCollapsed}
                         activeClass={getActiveClass(currentView === 'dashboard')}
                     />
-                    <NavItem
-                        icon={<Calendar size={20} />}
-                        label="Planner"
-                        active={currentView === 'planner'}
-                        onClick={() => { onNavigate('planner'); setIsMobileOpen(false); }}
-                        collapsed={isCollapsed}
-                        activeClass={getActiveClass(currentView === 'planner')}
-                    />
-                    <NavItem
-                        icon={<CheckSquare size={20} />}
-                        label="Tasks"
-                        active={currentView === 'tasks'}
-                        onClick={() => { onNavigate('tasks'); setIsMobileOpen(false); }}
-                        collapsed={isCollapsed}
-                        activeClass={getActiveClass(currentView === 'tasks')}
-                    />
+                    {workspace !== 'learning' ? (
+                        <>
+                            <NavItem
+                                icon={<Calendar size={20} />}
+                                label="Planner"
+                                active={currentView === 'planner'}
+                                onClick={() => { onNavigate('planner'); setIsMobileOpen(false); }}
+                                collapsed={isCollapsed}
+                                activeClass={getActiveClass(currentView === 'planner')}
+                            />
+                            <NavItem
+                                icon={<CheckSquare size={20} />}
+                                label="Tasks"
+                                active={currentView === 'tasks'}
+                                onClick={() => { onNavigate('tasks'); setIsMobileOpen(false); }}
+                                collapsed={isCollapsed}
+                                activeClass={getActiveClass(currentView === 'tasks')}
+                            />
+                        </>
+                    ) : (
+                        <NavItem
+                            icon={<Map size={20} />}
+                            label="Roadmaps"
+                            active={currentView === 'roadmap'}
+                            onClick={() => { onNavigate('roadmap'); setIsMobileOpen(false); }}
+                            collapsed={isCollapsed}
+                            activeClass={getActiveClass(currentView === 'roadmap')}
+                        />
+                    )}
                     <NavItem
                         icon={<FileText size={20} />}
                         label="Notes"

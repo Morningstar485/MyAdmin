@@ -11,9 +11,12 @@ interface PageHeaderProps {
     children?: React.ReactNode;
     stats?: Stat[];
     progress?: number;
+    themeColor?: 'indigo' | 'emerald';
 }
 
-export function PageHeader({ title, description, children, stats, progress }: PageHeaderProps) {
+export function PageHeader({ title, description, children, stats, progress, themeColor = 'indigo' }: PageHeaderProps) {
+    const isEmerald = themeColor === 'emerald';
+
     return (
         <div className="mb-6 bg-slate-800/50 border border-slate-700/50 rounded-2xl p-4 backdrop-blur-sm shadow-lg shadow-black/5">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -27,11 +30,11 @@ export function PageHeader({ title, description, children, stats, progress }: Pa
                                 <div className="flex items-center gap-2 px-2.5 py-1 bg-slate-700/50 rounded-full border border-slate-600/50">
                                     <div className="w-16 h-1.5 bg-slate-600 rounded-full overflow-hidden">
                                         <div
-                                            className="h-full bg-indigo-500 rounded-full"
+                                            className={`h-full rounded-full ${isEmerald ? 'bg-emerald-500' : 'bg-indigo-500'}`}
                                             style={{ width: `${Math.max(2, Math.min(100, progress))}%` }}
                                         />
                                     </div>
-                                    <span className="text-[10px] font-bold text-indigo-300">{Math.round(progress)}%</span>
+                                    <span className={`text-[10px] font-bold ${isEmerald ? 'text-emerald-300' : 'text-indigo-300'}`}>{Math.round(progress)}%</span>
                                 </div>
                             )}
 

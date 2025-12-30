@@ -43,13 +43,27 @@ export async function fetchNoteForResource(resourceId: string): Promise<Learning
  * 
  * @returns Array of resources.
  */
-export async function fetchResources(): Promise<Resource[]> {
+/**
+ * Fetches resources for the current workspace and folder.
+ * 
+ * @param folderId Optional folder ID to filter by.
+ * @returns Array of resources.
+ */
+export async function fetchResources(folderId: string | null = null): Promise<Resource[]> {
     try {
-        const { data, error } = await supabase
+        let query = supabase
             .from('resources')
             .select('*')
             .eq('workspace', 'learning')
             .order('created_at', { ascending: false });
+
+        if (folderId) {
+            query = query.eq('folder_id', folderId);
+        } else {
+            query = query.is('folder_id', null);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
         return data || [];
@@ -70,6 +84,7 @@ export async function createResource(resource: {
     drive_file_id: string;
     drive_embed_link: string;
     mime_type: string;
+    folder_id?: string | null;
 }): Promise<Resource | null> {
     try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -81,7 +96,8 @@ export async function createResource(resource: {
                 ...resource,
                 user_id: user.id,
                 workspace: 'learning',
-                type: 'pdf'
+                type: 'pdf',
+                folder_id: resource.folder_id || null
             }])
             .select()
             .single();

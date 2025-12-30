@@ -21,7 +21,7 @@ function AppContent() {
 
   // We still use internal View state for the main dashboard to preserve existing logic
   const [currentView, setCurrentView] = useState<View>(() => {
-    const saved = localStorage.getItem('currentView');
+    const saved = localStorage.getItem(`myadmin_view_${workspace}`);
     return (saved as View) || 'dashboard';
   });
 
@@ -42,10 +42,19 @@ function AppContent() {
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const saved = localStorage.getItem(`myadmin_view_${workspace}`);
+    if (saved) {
+      setCurrentView(saved as View);
+    } else {
+      setCurrentView('dashboard');
+    }
+  }, [workspace]);
+
   const handleNavigate = (view: View) => {
     confirmNavigation(() => {
       setCurrentView(view);
-      localStorage.setItem('currentView', view);
+      localStorage.setItem(`myadmin_view_${workspace}`, view);
     });
   };
 
@@ -64,6 +73,7 @@ function AppContent() {
       case 'notes':
         return <NotesBoard />;
       case 'library':
+      case 'roadmap':
         return <Dashboard />;
       case 'settings':
         return <SettingsBoard />;

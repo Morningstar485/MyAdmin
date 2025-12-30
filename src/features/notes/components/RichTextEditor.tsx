@@ -184,7 +184,7 @@ export function RichTextEditor({ content, onChange, editable = true, isExpanded 
     };
 
     return (
-        <div className="flex flex-col gap-2 relative">
+        <div className="h-full flex flex-col relative">
             {isUploading && (
                 <div className="absolute inset-0 z-50 bg-black/50 rounded-lg flex items-center justify-center backdrop-blur-sm">
                     <div className="bg-slate-800 text-white px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 border border-slate-700">
@@ -195,8 +195,8 @@ export function RichTextEditor({ content, onChange, editable = true, isExpanded 
             )}
 
             {editable && (
-                <div className="flex items-center gap-2 p-1 bg-slate-800/50 rounded-lg border border-slate-700/50 w-full mb-1">
-                    <div className="flex items-center gap-1 overflow-x-auto">
+                <div className="flex items-center gap-2 p-2 border-b border-white/5 w-full">
+                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
                         <ToolbarButton
                             onClick={() => editor.chain().focus().toggleBold().run()}
                             isActive={editor.isActive('bold')}
@@ -221,7 +221,7 @@ export function RichTextEditor({ content, onChange, editable = true, isExpanded 
                             icon={<Strikethrough size={16} />}
                             label="Strike"
                         />
-                        <div className="w-px h-4 bg-slate-700 mx-1 shrink-0" />
+                        <div className="w-px h-4 bg-white/10 mx-1 shrink-0" />
                         <ToolbarButton
                             onClick={setLink}
                             isActive={editor.isActive('link')}
@@ -235,7 +235,7 @@ export function RichTextEditor({ content, onChange, editable = true, isExpanded 
                             icon={<Unlink size={16} />}
                             label="Unset Link"
                         />
-                        <div className="w-px h-4 bg-slate-700 mx-1 shrink-0" />
+                        <div className="w-px h-4 bg-white/10 mx-1 shrink-0" />
                         <ToolbarButton
                             onClick={() => editor.chain().focus().toggleHighlight().run()}
                             isActive={editor.isActive('highlight')}
@@ -252,9 +252,8 @@ export function RichTextEditor({ content, onChange, editable = true, isExpanded 
                 </div>
             )}
             <div className={`
-                bg-slate-900/50 rounded-lg border border-slate-700/50 p-4 
+                p-6 h-full overflow-y-auto custom-scrollbar
                 ${editable ? 'cursor-text' : ''}
-                ${isExpanded ? 'min-h-[60vh]' : 'min-h-[300px]'}
                 transition-all duration-300
             `}
                 onClick={handleContainerClick}

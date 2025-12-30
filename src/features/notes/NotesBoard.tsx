@@ -5,8 +5,9 @@ import { Modal } from '../../components/Modal';
 import { RichTextEditor } from './components/RichTextEditor';
 import { supabase } from '../../lib/supabase';
 import type { Note } from './types';
-import { Folder as FolderIcon, FileText, ChevronRight, Pencil, Trash2 } from 'lucide-react';
+import { Folder as FolderIcon, FileText, ChevronRight, Pencil, Loader2, Minimize2, Maximize2 } from 'lucide-react';
 import { useWorkspace } from '../../contexts/WorkspaceContext';
+import { NoteCard } from './components/NoteCard';
 
 export function NotesBoard({ workspace: workspaceProp }: { workspace?: string }) {
     const { workspace: workspaceContext } = useWorkspace();
@@ -28,6 +29,7 @@ export function NotesBoard({ workspace: workspaceProp }: { workspace?: string })
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [editingNote, setEditingNote] = useState<Note | null>(null);
     const [isEditingMode, setIsEditingMode] = useState(false); // Read-only vs Edit toggle
+    const [isCompactMode, setIsCompactMode] = useState(false);
 
     const [noteTitle, setNoteTitle] = useState('');
     const [noteContent, setNoteContent] = useState('');
@@ -127,42 +129,52 @@ export function NotesBoard({ workspace: workspaceProp }: { workspace?: string })
     // Calculate Grid Stats?
     // Not really needed for Notes, but easy enough.
 
+    // Theme Logic
+    const themeColor = workspace === 'learning' ? 'emerald' : 'indigo';
+    const isEmerald = themeColor === 'emerald';
+
     return (
-        <div className="h-full flex flex-col px-6 pt-6 overflow-hidden">
+        <div className="h-full flex flex-col px-6 pt-6 overflow-hidden bg-slate-950">
             <PageHeader
                 title="My Notes"
-                description="Capture ideas and documents."
+                description="Capture ideas and organize your thoughts."
+                stats={[
+                    { label: 'Notes', value: notes.length },
+                    { label: 'Folders', value: folders.length }
+                ]}
+                themeColor={themeColor}
             >
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => setIsFolderModalOpen(true)}
-                        className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-slate-700"
-                    >
-                        + New Folder
-                    </button>
-                    <button
-                        onClick={handleCreateNote}
-                        className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-600/20"
-                    >
-                        + New Note
-                    </button>
-                </div>
+                <button
+                    onClick={() => setIsFolderModalOpen(true)}
+                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all bg-slate-900 border border-white/5 text-slate-400 hover:text-white hover:bg-slate-800`}
+                >
+                    + New Folder
+                </button>
+                <button
+                    onClick={handleCreateNote}
+                    className={`px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all shadow-lg ${isEmerald
+                        ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20'
+                        : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/20'
+                        }`}
+                >
+                    + New Note
+                </button>
             </PageHeader>
 
-            {/* Breadcrumbs & Navigation */}
-            <div className="flex items-center gap-2 mb-6 text-sm text-slate-400 overflow-x-auto pb-2">
+            {/* Breadcrumbs */}
+            <div className="flex items-center gap-2 mb-8 text-sm text-slate-500 overflow-x-auto pb-2 shrink-0">
                 <button
                     onClick={() => navigateTo(null)}
-                    className={`hover:text-indigo-400 transition-colors ${!currentFolderId ? 'text-indigo-400 font-medium' : ''}`}
+                    className={`hover:text-white transition-colors ${!currentFolderId ? (isEmerald ? 'text-emerald-400 font-bold' : 'text-indigo-400 font-bold') : ''}`}
                 >
                     Home
                 </button>
                 {breadcrumbs.map((crumb) => (
                     <div key={crumb.id} className="flex items-center gap-2">
-                        <ChevronRight size={14} />
+                        <ChevronRight size={14} className="text-slate-700" />
                         <button
                             onClick={() => navigateTo(crumb.id)}
-                            className={`hover:text-indigo-400 transition-colors ${crumb.id === currentFolderId ? 'text-indigo-400 font-medium' : ''}`}
+                            className={`hover:text-white transition-colors ${crumb.id === currentFolderId ? (isEmerald ? 'text-emerald-400 font-bold' : 'text-indigo-400 font-bold') : ''}`}
                         >
                             {crumb.name}
                         </button>
@@ -171,75 +183,79 @@ export function NotesBoard({ workspace: workspaceProp }: { workspace?: string })
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 overflow-y-auto pb-20">
+            <div className="flex-1 overflow-y-auto pb-20 custom-scrollbar">
                 {isLoading ? (
-                    <div className="flex items-center justify-center h-40 text-slate-500">Loading...</div>
+                    <div className="flex items-center justify-center h-40 text-slate-600">
+                        <Loader2 className="animate-spin text-slate-700" size={24} />
+                    </div>
                 ) : (
                     <>
-                        {/* Folders Grid */}
+                        {/* Folders Section */}
                         {folders.length > 0 && (
-                            <div className="mb-8">
-                                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Folders</h3>
+                            <div className="mb-10">
+                                <h3 className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-4 pl-1">Folders</h3>
                                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                                     {folders.map(folder => (
                                         <button
                                             key={folder.id}
                                             onClick={() => navigateTo(folder.id)}
-                                            className="group flex flex-col items-center justify-center p-6 bg-slate-900/50 border border-slate-800 rounded-xl hover:bg-slate-800 hover:border-indigo-500/50 transition-all"
+                                            className={`group flex flex-col items-start justify-between p-5 h-32 bg-slate-900/40 border border-white/5 rounded-2xl transition-all hover:-translate-y-1 hover:shadow-xl ${isEmerald
+                                                ? 'hover:bg-emerald-500/5 hover:border-emerald-500/30 hover:shadow-emerald-500/10'
+                                                : 'hover:bg-indigo-500/5 hover:border-indigo-500/30 hover:shadow-indigo-500/10'
+                                                }`}
                                         >
-                                            <FolderIcon size={32} className="text-indigo-500/80 mb-3 group-hover:scale-110 transition-transform" fill="currentColor" fillOpacity={0.2} />
-                                            <span className="text-sm font-medium text-slate-300 group-hover:text-white truncate w-full text-center">{folder.name}</span>
+                                            <FolderIcon
+                                                size={24}
+                                                className={`mb-3 transition-colors ${isEmerald
+                                                    ? 'text-slate-700 group-hover:text-emerald-400'
+                                                    : 'text-slate-700 group-hover:text-indigo-400'
+                                                    }`}
+                                                fill="currentColor"
+                                                fillOpacity={0.1}
+                                            />
+                                            <span className="text-sm font-bold text-slate-300 group-hover:text-white truncate w-full text-left">
+                                                {folder.name}
+                                            </span>
                                         </button>
                                     ))}
                                 </div>
                             </div>
                         )}
 
-                        {/* Notes Grid */}
+                        {/* Notes Section */}
                         <div className="mb-8">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Notes</h3>
-                                <span className="text-xs text-slate-600">{notes.length} notes</span>
+                            <div className="flex items-center justify-between mb-4 pl-1">
+                                <h3 className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Notes</h3>
+                                <span className="text-[10px] font-bold text-slate-700 bg-slate-900 px-2 py-1 rounded-full border border-white/5">
+                                    {notes.length}
+                                </span>
                             </div>
 
                             {notes.length === 0 && folders.length === 0 && (
-                                <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-slate-800 rounded-2xl bg-slate-900/20">
-                                    <div className="p-4 bg-slate-800 rounded-full mb-4">
-                                        <FileText size={32} className="text-slate-600" />
+                                <div className="flex flex-col items-center justify-center h-80 border-2 border-dashed border-slate-800/50 rounded-3xl bg-slate-900/20">
+                                    <div className="p-5 bg-slate-900 rounded-2xl mb-4 border border-white/5">
+                                        <FileText size={40} className="text-slate-700" />
                                     </div>
-                                    <p className="text-slate-500 font-medium">No notes in this folder</p>
+                                    <p className="text-slate-500 font-medium mb-1">It's quiet here...</p>
+                                    <p className="text-xs text-slate-600 mb-6">Create a note to get started.</p>
                                     <button
                                         onClick={handleCreateNote}
-                                        className="mt-4 text-indigo-400 hover:text-indigo-300 text-sm font-medium"
+                                        className={`text-sm font-bold hover:underline transition-colors ${isEmerald ? 'text-emerald-400' : 'text-indigo-400'}`}
                                     >
                                         Create your first note
                                     </button>
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
                                 {notes.map(note => (
-                                    <div
+                                    <NoteCard
                                         key={note.id}
+                                        note={note}
                                         onClick={() => handleOpenNote(note)}
-                                        className="group bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-500/10 transition-all cursor-pointer flex flex-col h-48 relative"
-                                    >
-                                        <h4 className="font-bold text-slate-200 mb-2 line-clamp-2 leading-tight pr-6">{note.title || 'Untitled Note'}</h4>
-                                        <div
-                                            className="text-sm text-slate-400 line-clamp-4 prose prose-invert prose-sm"
-                                            dangerouslySetInnerHTML={{ __html: note.content || '<p class="opacity-50 italic">No content</p>' }}
-                                        />
-                                        <div className="mt-auto pt-4 flex items-center justify-between text-xs text-slate-600">
-                                            <span>{new Date(note.updated_at).toLocaleDateString()}</span>
-                                        </div>
-
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); handleDeleteNote(note.id); }}
-                                            className="absolute top-4 right-4 text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-500/10 rounded"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
-                                    </div>
+                                        onDelete={() => handleDeleteNote(note.id)}
+                                        themeColor={themeColor}
+                                    />
                                 ))}
                             </div>
                         </div>
@@ -251,54 +267,54 @@ export function NotesBoard({ workspace: workspaceProp }: { workspace?: string })
             <Modal
                 isOpen={isCreateModalOpen}
                 onClose={handleCloseModal}
-                maxWidth="4xl"
+                maxWidth={isCompactMode ? 'max-w-xl' : 'max-w-5xl'}
+                centerTitle
                 title={
-                    <div className="flex items-center gap-3 max-w-xl">
-                        <span className="truncate text-lg font-semibold text-slate-100">
-                            {isEditingMode
-                                ? (editingNote ? 'Edit Note' : 'New Note')
-                                : (editingNote?.title || 'Untitled Note')
-                            }
-                        </span>
-                        {!isEditingMode && editingNote && (
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded-full shrink-0 border border-indigo-500/30">Read Only</span>
-                        )}
-                    </div>
+                    <span className="truncate text-lg font-bold text-slate-100">
+                        {isEditingMode
+                            ? (editingNote ? 'Edit Note' : 'New Note')
+                            : (editingNote?.title || 'Untitled Note')
+                        }
+                    </span>
                 }
                 headerAction={
-                    // Edit Toggle Button in Header
-                    editingNote ? (
+                    <>
                         <button
-                            onClick={() => setIsEditingMode(!isEditingMode)}
-                            className={`
-                                p-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium
-                                ${isEditingMode
-                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
-                                    : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
-                                }
-                            `}
-                            title={isEditingMode ? "Finish Editing" : "Edit Note"}
+                            onClick={() => setIsCompactMode(!isCompactMode)}
+                            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
+                            title={isCompactMode ? "Expand View" : "Compact View"}
                         >
-                            <Pencil size={16} />
-                            <span className="hidden sm:inline">{isEditingMode ? 'Editing' : 'Edit'}</span>
+                            {isCompactMode ? <Maximize2 size={18} /> : <Minimize2 size={18} />}
                         </button>
-                    ) : null
+                        {editingNote && (
+                            <button
+                                onClick={() => setIsEditingMode(!isEditingMode)}
+                                className={`p-2 rounded-xl transition-all flex items-center gap-2 text-xs font-bold ${isEditingMode
+                                    ? isEmerald ? 'bg-emerald-600 text-white' : 'bg-indigo-600 text-white'
+                                    : 'bg-slate-900 text-slate-400 hover:text-white border border-white/5'
+                                    }`}
+                                title={isEditingMode ? "Finish Editing" : "Edit Note"}
+                            >
+                                <Pencil size={14} />
+                                <span className="hidden sm:inline">{isEditingMode ? 'Editing' : 'Edit'}</span>
+                            </button>
+                        )}
+                    </>
                 }
             >
                 <div className="flex flex-col h-[70vh]">
-                    {/* Title Input - Only in Edit Mode */}
                     {isEditingMode && (
                         <input
                             type="text"
                             placeholder="Note Title"
-                            className="bg-transparent text-2xl font-bold text-white border-none focus:ring-0 px-0 mb-4 placeholder:text-slate-600"
+                            className="bg-transparent text-2xl font-bold text-white border-none focus:ring-0 px-0 mb-4 placeholder:text-slate-700"
                             value={noteTitle}
                             onChange={(e) => setNoteTitle(e.target.value)}
                             autoFocus={!editingNote}
                         />
                     )}
 
-                    <div className="flex-1 overflow-hidden bg-slate-950/50 rounded-xl border border-slate-800/50">
+                    <div className="flex-1 overflow-hidden bg-slate-950/30 rounded-2xl border border-white/5">
                         <RichTextEditor
                             content={noteContent}
                             onChange={setNoteContent}
@@ -311,13 +327,16 @@ export function NotesBoard({ workspace: workspaceProp }: { workspace?: string })
                         <div className="flex justify-end gap-3 pt-6 shrink-0">
                             <button
                                 onClick={handleCloseModal}
-                                className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors"
+                                className="px-4 py-2 text-sm font-bold text-slate-500 hover:text-white transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleSaveNote}
-                                className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-2 rounded-lg font-medium transition-colors shadow-lg shadow-indigo-600/20"
+                                className={`text-white px-6 py-2 rounded-xl text-sm font-bold transition-all shadow-lg ${isEmerald
+                                    ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20'
+                                    : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/20'
+                                    }`}
                             >
                                 Save Note
                             </button>
@@ -338,7 +357,8 @@ export function NotesBoard({ workspace: workspaceProp }: { workspace?: string })
                         autoFocus
                         type="text"
                         placeholder="Folder Name"
-                        className="w-full bg-slate-800 border-none rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500"
+                        className={`w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 ${isEmerald ? 'focus:ring-emerald-500/50' : 'focus:ring-indigo-500/50'
+                            }`}
                         value={newFolderName}
                         onChange={e => setNewFolderName(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleCreateFolder()}
@@ -346,13 +366,16 @@ export function NotesBoard({ workspace: workspaceProp }: { workspace?: string })
                     <div className="flex justify-end gap-3 pt-2">
                         <button
                             onClick={() => setIsFolderModalOpen(false)}
-                            className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors"
+                            className="px-4 py-2 text-sm font-bold text-slate-500 hover:text-white transition-colors"
                         >
                             Cancel
                         </button>
                         <button
                             onClick={handleCreateFolder}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-lg shadow-indigo-600/20"
+                            className={`text-white px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-lg ${isEmerald
+                                ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20'
+                                : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/20'
+                                }`}
                         >
                             Create Folder
                         </button>

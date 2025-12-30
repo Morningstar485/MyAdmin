@@ -1,35 +1,4 @@
-export interface Folder {
-    id: string;
-    name: string;
-    parent_id: string | null;
-    user_id: string;
-    created_at: string;
-    workspace: string;
-}
-
-export interface Resource {
-    id: string;
-    user_id: string;
-    workspace: string;
-    title: string;
-    drive_file_id: string;
-    drive_embed_link: string;
-    mime_type: string;
-    type: string;
-    created_at: string;
-    folder_id?: string | null;
-}
-
-export interface LearningNote {
-    id: string;
-    resource_id: string; // UUID of the PDF/Resource
-    content: string | any; // Actual note content (Text/JSON)
-    title: string;
-    created_at?: string;
-    updated_at?: string;
-    user_id?: string;
-    workspace?: string;
-}
+import type { Resource } from '../learning/types';
 
 export type RoadmapStatus = 'active' | 'paused' | 'completed';
 export type MilestoneStatus = 'not_started' | 'in_progress' | 'completed';
@@ -42,7 +11,6 @@ export interface Roadmap {
     status: RoadmapStatus;
     created_at: string;
     workspace: string;
-    // Helper fields for UI (joined)
     total_tasks?: number;
     completed_tasks?: number;
 }
@@ -65,4 +33,9 @@ export interface RoadmapItem {
     is_completed: boolean;
     order_index: number;
     created_at: string;
+    resources?: Resource | null; // Joined resource data
+}
+
+export interface MilestoneWithItems extends RoadmapMilestone {
+    roadmap_items: RoadmapItem[];
 }

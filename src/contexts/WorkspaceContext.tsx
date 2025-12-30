@@ -34,7 +34,10 @@ const THEMES: Record<WorkspaceType, WorkspaceTheme> = {
 };
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
-    const [workspace, setWorkspaceState] = useState<WorkspaceType>('work');
+    const [workspace, setWorkspaceState] = useState<WorkspaceType>(() => {
+        const saved = localStorage.getItem('myadmin_workspace');
+        return (saved as WorkspaceType) || 'work';
+    });
 
     const setWorkspace = (ws: WorkspaceType) => {
         setWorkspaceState(ws);

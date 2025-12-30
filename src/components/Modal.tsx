@@ -7,10 +7,11 @@ interface ModalProps {
     title: React.ReactNode;
     children: React.ReactNode;
     maxWidth?: string;
+    centerTitle?: boolean;
     headerAction?: React.ReactNode;
 }
 
-export function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-md', headerAction }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-md', headerAction, centerTitle }: ModalProps) {
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose();
@@ -27,9 +28,11 @@ export function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-md',
                 className={`bg-slate-900 border border-slate-700/50 rounded-2xl w-full ${maxWidth} max-h-[90vh] flex flex-col shadow-2xl shadow-black/50 overflow-hidden animate-in zoom-in-95 duration-200 transition-all duration-300`}
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="flex items-center justify-between p-4 border-b border-slate-800 shrink-0">
-                    <div className="text-lg font-semibold text-white">{title}</div>
-                    <div className="flex items-center gap-2">
+                <div className={`flex items-center justify-between p-4 border-b border-slate-800 shrink-0 relative min-h-[60px]`}>
+                    <div className={`text-lg font-semibold text-white ${centerTitle ? 'absolute left-1/2 -translate-x-1/2' : ''}`}>
+                        {title}
+                    </div>
+                    <div className="flex items-center gap-2 ml-auto">
                         {headerAction}
                         <button
                             onClick={onClose}
