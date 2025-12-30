@@ -191,3 +191,25 @@ export async function deleteResources(ids: string[]): Promise<boolean> {
         return false;
     }
 }
+
+/**
+ * Moves a resource to a different folder.
+ * 
+ * @param resourceId The UUID of the resource to move.
+ * @param folderId The UUID of the destination folder (or null for root).
+ * @returns boolean indicating success.
+ */
+export async function moveResource(resourceId: string, folderId: string | null): Promise<boolean> {
+    try {
+        const { error } = await supabase
+            .from('resources')
+            .update({ folder_id: folderId })
+            .eq('id', resourceId);
+
+        if (error) throw error;
+        return true;
+    } catch (err) {
+        console.error('Error moving resource:', err);
+        return false;
+    }
+}

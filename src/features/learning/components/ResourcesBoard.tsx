@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGoogleDrivePicker } from '../../../hooks/useGoogleDrivePicker';
-import { createResource, deleteResources } from '../learningService';
+import { createResource, deleteResources, moveResource } from '../learningService';
 import type { Resource } from '../types';
 import { PageHeader } from '../../../components/PageHeader';
 import { useResourceFileSystem } from '../hooks/useResourceFileSystem';
@@ -44,6 +44,7 @@ export function ResourcesBoard({ onSelectResource, workspace }: ResourcesBoardPr
     const [isDeleteMode, setIsDeleteMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [showFilters, setShowFilters] = useState(false);
+    const [dropTargetId, setDropTargetId] = useState<string | null>(null);
 
     // Google Drive Picker
     const { openPicker, isReady: isPickerReady } = useGoogleDrivePicker({
@@ -99,6 +100,36 @@ export function ResourcesBoard({ onSelectResource, workspace }: ResourcesBoardPr
             }
         } catch (err) {
             console.error(err);
+        }
+    };
+
+    // Drag and Drop Handlers
+    const handleDragStart = (e: React.DragEvent, resource: Resource) => {
+        e.dataTransfer.setData('resourceId', resource.id);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragOver = (e: React.DragEvent, folderId: string) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        setDropTargetId(folderId);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        setDropTargetId(null);
+    };
+
+    const handleDrop = async (e: React.DragEvent, folderId: string) => {
+        e.preventDefault();
+        setDropTargetId(null);
+        const resourceId = e.dataTransfer.getData('resourceId');
+
+        if (resourceId) {
+            const success = await moveResource(resourceId, folderId);
+            if (success) {
+                refresh();
+            }
         }
     };
 
@@ -282,7 +313,14 @@ export function ResourcesBoard({ onSelectResource, workspace }: ResourcesBoardPr
                                         <div
                                             key={folder.id}
                                             onClick={() => navigateTo(folder.id)}
-                                            className="group flex items-center gap-3 p-4 bg-slate-900/40 border border-white/5 rounded-2xl hover:bg-slate-800 hover:border-white/10 cursor-pointer transition-all active:scale-[0.98]"
+                                            onDragOver={(e) => handleDragOver(e, folder.id)}
+                                            onDragLeave={handleDragLeave}
+                                            onDrop={(e) => handleDrop(e, folder.id)}
+                                            className={`group flex items-center gap-3 p-4 border rounded-2xl cursor-pointer transition-all active:scale-[0.98]
+                                                ${dropTargetId === folder.id
+                                                    ? `bg-slate-800 ring-2 ${isEmerald ? 'ring-emerald-500' : 'ring-indigo-500'}`
+                                                    : 'bg-slate-900/40 border-white/5 hover:bg-slate-800 hover:border-white/10'
+                                                }`}
                                         >
                                             <FolderIcon className={`w-5 h-5 transition-colors ${isEmerald ? 'text-emerald-500 group-hover:text-emerald-400' : 'text-indigo-500 group-hover:text-indigo-400'}`} />
                                             <span className="font-medium text-slate-300 group-hover:text-white truncate">{folder.name}</span>
@@ -301,6 +339,8 @@ export function ResourcesBoard({ onSelectResource, workspace }: ResourcesBoardPr
                                         <motion.div
                                             layoutId={resource.id}
                                             key={resource.id}
+                                            draggable={!isDeleteMode}
+                                            onDragStart={(e) => !isDeleteMode && handleDragStart(e as unknown as React.DragEvent, resource)}
                                             onClick={() => {
                                                 if (isDeleteMode) handleSelectForDelete(resource.id);
                                                 else onSelectResource(resource);

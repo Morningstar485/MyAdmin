@@ -193,29 +193,20 @@ export function NotesBoard({ workspace: workspaceProp }: { workspace?: string })
                         {/* Folders Section */}
                         {folders.length > 0 && (
                             <div className="mb-10">
-                                <h3 className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-4 pl-1">Folders</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 px-1">Folders</h3>
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                                     {folders.map(folder => (
                                         <button
                                             key={folder.id}
                                             onClick={() => navigateTo(folder.id)}
-                                            className={`group flex flex-col items-start justify-between p-5 h-32 bg-slate-900/40 border border-white/5 rounded-2xl transition-all hover:-translate-y-1 hover:shadow-xl ${isEmerald
-                                                ? 'hover:bg-emerald-500/5 hover:border-emerald-500/30 hover:shadow-emerald-500/10'
-                                                : 'hover:bg-indigo-500/5 hover:border-indigo-500/30 hover:shadow-indigo-500/10'
-                                                }`}
+                                            className={`group flex items-center gap-3 p-4 bg-slate-900/40 border border-white/5 rounded-2xl hover:bg-slate-800 hover:border-white/10 cursor-pointer transition-all active:scale-[0.98] w-full text-left`}
                                         >
                                             <FolderIcon
-                                                size={24}
-                                                className={`mb-3 transition-colors ${isEmerald
-                                                    ? 'text-slate-700 group-hover:text-emerald-400'
-                                                    : 'text-slate-700 group-hover:text-indigo-400'
-                                                    }`}
-                                                fill="currentColor"
-                                                fillOpacity={0.1}
+                                                className={`w-5 h-5 transition-colors ${isEmerald
+                                                    ? 'text-emerald-500 group-hover:text-emerald-400'
+                                                    : 'text-indigo-500 group-hover:text-indigo-400'}`}
                                             />
-                                            <span className="text-sm font-bold text-slate-300 group-hover:text-white truncate w-full text-left">
-                                                {folder.name}
-                                            </span>
+                                            <span className="font-medium text-slate-300 group-hover:text-white truncate">{folder.name}</span>
                                         </button>
                                     ))}
                                 </div>

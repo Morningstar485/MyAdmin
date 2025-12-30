@@ -128,6 +128,7 @@ export function RoadmapDashboard({ onSelectRoadmap, workspace = 'learning' }: { 
                                 roadmap={roadmap}
                                 variants={item}
                                 onSelect={() => onSelectRoadmap(roadmap.id)}
+                                isEmerald={isEmerald}
                             />
                         ))}
                     </motion.div>
@@ -207,7 +208,7 @@ export function RoadmapDashboard({ onSelectRoadmap, workspace = 'learning' }: { 
     );
 }
 
-function RoadmapCard({ roadmap, variants, onSelect }: { roadmap: Roadmap, variants: any, onSelect: () => void }) {
+function RoadmapCard({ roadmap, variants, onSelect, isEmerald }: { roadmap: Roadmap, variants: any, onSelect: () => void, isEmerald: boolean }) {
     // Calculate progress from real data
     const progress = roadmap.total_tasks && roadmap.total_tasks > 0
         ? Math.round((roadmap.completed_tasks! / roadmap.total_tasks) * 100)
@@ -216,7 +217,9 @@ function RoadmapCard({ roadmap, variants, onSelect }: { roadmap: Roadmap, varian
     const getStatusStyles = (status: string) => {
         switch (status) {
             case 'active':
-                return 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20';
+                return isEmerald
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                    : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20';
             case 'completed':
                 return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
             case 'paused':
@@ -234,21 +237,33 @@ function RoadmapCard({ roadmap, variants, onSelect }: { roadmap: Roadmap, varian
     return (
         <motion.div
             variants={variants}
-            className="group relative bg-slate-900/60 border border-white/10 rounded-2xl p-5 hover:border-indigo-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/10 flex flex-col h-full"
+            className={`group relative bg-slate-900/60 border border-white/10 rounded-2xl p-5 transition-all duration-300 hover:shadow-xl flex flex-col h-full ${isEmerald
+                ? 'hover:border-emerald-500/50 hover:shadow-emerald-500/10'
+                : 'hover:border-indigo-500/50 hover:shadow-indigo-500/10'
+                }`}
         >
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+            <div className={`absolute inset-0 bg-gradient-to-br to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl ${isEmerald
+                ? 'from-emerald-600/5'
+                : 'from-indigo-600/5'
+                }`} />
 
             <div className="relative z-10 flex flex-col h-full">
                 <div className="flex justify-between items-start mb-4">
                     <span className={`px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest rounded-full border ${getStatusStyles(roadmap.status)}`}>
                         {getStatusLabel(roadmap.status)}
                     </span>
-                    <div className="p-1.5 rounded-lg bg-slate-800 text-slate-400 group-hover:text-indigo-400 transition-colors">
+                    <div className={`p-1.5 rounded-lg bg-slate-800 text-slate-400 transition-colors ${isEmerald
+                        ? 'group-hover:text-emerald-400'
+                        : 'group-hover:text-indigo-400'
+                        }`}>
                         <MapIcon size={16} />
                     </div>
                 </div>
 
-                <h3 className="text-lg font-bold text-white mb-2 group-hover:text-indigo-400 transition-colors line-clamp-1">
+                <h3 className={`text-lg font-bold text-white mb-2 transition-colors line-clamp-1 ${isEmerald
+                    ? 'group-hover:text-emerald-400'
+                    : 'group-hover:text-indigo-400'
+                    }`}>
                     {roadmap.title}
                 </h3>
 
@@ -266,13 +281,19 @@ function RoadmapCard({ roadmap, variants, onSelect }: { roadmap: Roadmap, varian
                             initial={{ width: 0 }}
                             animate={{ width: `${progress}%` }}
                             transition={{ duration: 1, ease: "easeOut" }}
-                            className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full shadow-[0_0_8px_rgba(79,70,229,0.5)]"
+                            className={`h-full bg-gradient-to-r rounded-full ${isEmerald
+                                ? 'from-emerald-600 to-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
+                                : 'from-indigo-600 to-indigo-400 shadow-[0_0_8px_rgba(79,70,229,0.5)]'
+                                }`}
                         />
                     </div>
 
                     <button
                         onClick={onSelect}
-                        className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white py-2.5 rounded-xl text-xs font-bold transition-all duration-300 group/btn"
+                        className={`w-full flex items-center justify-center gap-2 bg-slate-800 text-slate-200 hover:text-white py-2.5 rounded-xl text-xs font-bold transition-all duration-300 group/btn ${isEmerald
+                            ? 'hover:bg-emerald-600'
+                            : 'hover:bg-indigo-600'
+                            }`}
                     >
                         Continue Journey
                         <ArrowRight size={14} className="translate-x-0 group-hover/btn:translate-x-1 transition-transform" />

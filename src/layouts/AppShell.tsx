@@ -3,6 +3,7 @@ import { LayoutDashboard, CheckSquare, FileText, Settings, Calendar, Menu, LogOu
 import { supabase } from '../lib/supabase';
 import { useWorkspace, type WorkspaceType } from '../contexts/WorkspaceContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { GlobalTimerStrip } from '../components/GlobalTimerStrip';
 
 export type View = 'tasks' | 'notes' | 'dashboard' | 'settings' | 'planner' | 'library' | 'roadmap';
 
@@ -13,7 +14,6 @@ interface AppShellProps {
 }
 
 export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
-    const [isCollapsed, setIsCollapsed] = useState(false); // Desktop Mini
     const [isMobileOpen, setIsMobileOpen] = useState(false); // Mobile Drawer
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -78,18 +78,10 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                     fixed inset-y-0 left-0 z-50 bg-slate-900 border-r border-slate-800 flex flex-col py-6 transition-transform duration-300 ease-in-out
                     lg:static lg:bg-slate-900/50 lg:backdrop-blur-xl lg:z-20
                     ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-                    ${isCollapsed ? 'lg:w-20' : 'lg:w-64'}
-                    w-64 shadow-2xl lg:shadow-none
+                    lg:w-64 w-64 shadow-2xl lg:shadow-none
                 `}
             >
-                {/* Desktop Collapse Toggle */}
-                <button
-                    onClick={() => setIsCollapsed(!isCollapsed)}
-                    className={`hidden lg:flex absolute -right-3 top-20 ${primaryBg} hover:opacity-90 text-white rounded-full p-1.5 shadow-lg z-50 transition-colors border-2 border-slate-950 items-center justify-center`}
-                    title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-                >
-                    <Menu size={16} />
-                </button>
+
 
                 {/* Mobile Close Button */}
                 <button
@@ -100,30 +92,28 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                 </button>
 
                 {/* LOGO & BRAND */}
-                <div className={`px-6 mb-8 flex items-center gap-3 transition-all duration-300 ${isCollapsed ? 'justify-center' : ''}`}>
+                <div className="px-6 mb-8 flex items-center gap-3 transition-all duration-300">
                     <div className={`w-10 h-10 ${primaryBg} rounded-xl flex items-center justify-center font-bold text-xl shadow-lg shrink-0 transition-colors duration-300`}>
                         M
                     </div>
-                    {!isCollapsed && (
-                        <span className="font-bold text-xl tracking-tight text-white overflow-hidden whitespace-nowrap">
-                            MyAdmin
-                        </span>
-                    )}
+                    <span className="font-bold text-xl tracking-tight text-white overflow-hidden whitespace-nowrap">
+                        MyAdmin
+                    </span>
                 </div>
 
                 {/* WORKSPACE DROPDOWN */}
                 <div className="px-4 mb-8 relative" ref={dropdownRef}>
                     <button
-                        onClick={() => !isCollapsed && setIsDropdownOpen(!isDropdownOpen)}
+                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                         className={`
                             w-full flex items-center gap-3 p-2 rounded-2xl transition-all duration-300
-                            ${!isCollapsed ? 'bg-slate-950/50 border border-white/5 hover:bg-slate-900 hover:border-white/10' : 'justify-center hover:bg-slate-800'}
+                            bg-slate-950/50 border border-white/5 hover:bg-slate-900 hover:border-white/10
                         `}
                     >
                         <div className={`w-10 h-10 ${primaryBg} rounded-xl flex items-center justify-center font-bold text-white shadow-lg shrink-0 transition-colors duration-300`}>
                             {theme.icon}
                         </div>
-                        <div className={`flex-1 flex flex-col items-start overflow-hidden transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0 hidden' : 'w-auto opacity-100'}`}>
+                        <div className="flex-1 flex flex-col items-start overflow-hidden transition-all duration-300 w-auto opacity-100">
                             <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Workspace</span>
                             <div className="flex items-center gap-2 w-full justify-between">
                                 <span className="text-sm font-bold text-white truncate">{theme.label}</span>
@@ -134,7 +124,7 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
 
                     {/* Dropdown Menu */}
                     <AnimatePresence>
-                        {isDropdownOpen && !isCollapsed && (
+                        {isDropdownOpen && (
                             <motion.div
                                 initial={{ opacity: 0, y: -10, scale: 0.95 }}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -177,7 +167,6 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                         label="Dashboard"
                         active={currentView === 'dashboard'}
                         onClick={() => { onNavigate('dashboard'); setIsMobileOpen(false); }}
-                        collapsed={isCollapsed}
                         activeClass={getActiveClass(currentView === 'dashboard')}
                     />
                     {workspace !== 'learning' ? (
@@ -187,7 +176,6 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                                 label="Planner"
                                 active={currentView === 'planner'}
                                 onClick={() => { onNavigate('planner'); setIsMobileOpen(false); }}
-                                collapsed={isCollapsed}
                                 activeClass={getActiveClass(currentView === 'planner')}
                             />
                             <NavItem
@@ -195,7 +183,6 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                                 label="Tasks"
                                 active={currentView === 'tasks'}
                                 onClick={() => { onNavigate('tasks'); setIsMobileOpen(false); }}
-                                collapsed={isCollapsed}
                                 activeClass={getActiveClass(currentView === 'tasks')}
                             />
                         </>
@@ -205,7 +192,6 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                             label="Roadmaps"
                             active={currentView === 'roadmap'}
                             onClick={() => { onNavigate('roadmap'); setIsMobileOpen(false); }}
-                            collapsed={isCollapsed}
                             activeClass={getActiveClass(currentView === 'roadmap')}
                         />
                     )}
@@ -214,7 +200,6 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                         label="Notes"
                         active={currentView === 'notes'}
                         onClick={() => { onNavigate('notes'); setIsMobileOpen(false); }}
-                        collapsed={isCollapsed}
                         activeClass={getActiveClass(currentView === 'notes')}
                     />
                     {workspace === 'learning' && (
@@ -223,7 +208,6 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                             label="Library"
                             active={currentView === 'library'}
                             onClick={() => { onNavigate('library'); setIsMobileOpen(false); }}
-                            collapsed={isCollapsed}
                             activeClass={getActiveClass(currentView === 'library')}
                         />
                     )}
@@ -235,7 +219,6 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                         label="Settings"
                         active={currentView === 'settings'}
                         onClick={() => { onNavigate('settings'); setIsMobileOpen(false); }}
-                        collapsed={isCollapsed}
                         activeClass={getActiveClass(currentView === 'settings')}
                     />
                     <div className="h-px bg-slate-800 mx-1 my-2" />
@@ -252,7 +235,6 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                                 window.location.href = import.meta.env.BASE_URL;
                             }
                         }}
-                        collapsed={isCollapsed}
                         activeClass="text-slate-400 hover:bg-slate-800 hover:text-white"
                     />
                 </div>
@@ -261,26 +243,28 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
             {/* Main Content */}
             <main className="flex-1 overflow-hidden relative bg-slate-950 pt-16 lg:pt-0">
                 {children}
+
+                {/* Global Timer Strip */}
+                <GlobalTimerStrip />
             </main>
         </div>
     );
 }
 
-function NavItem({ icon, label, onClick, collapsed, activeClass }: { icon: React.ReactNode, label: string, active?: boolean, onClick?: () => void, collapsed?: boolean, activeClass: string }) {
+function NavItem({ icon, label, onClick, activeClass }: { icon: React.ReactNode, label: string, active?: boolean, onClick?: () => void, activeClass: string }) {
     return (
         <button
             onClick={onClick}
             className={`
                 w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group
                 ${activeClass}
-                ${collapsed ? 'justify-center' : 'justify-start'}
+                justify-start
             `}
-            title={collapsed ? label : undefined}
         >
             <span className={`shrink-0`}>
                 {icon}
             </span>
-            <span className={`ml-3 text-sm font-medium overflow-hidden whitespace-nowrap transition-all duration-300 ${collapsed ? 'lg:w-0 lg:opacity-0 lg:hidden' : 'w-auto opacity-100'} `}>
+            <span className={`ml-3 text-sm font-medium overflow-hidden whitespace-nowrap transition-all duration-300 w-auto opacity-100`}>
                 {label}
             </span>
         </button>
