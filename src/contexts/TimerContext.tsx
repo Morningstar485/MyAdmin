@@ -16,6 +16,7 @@ interface TimerContextType {
     startTimer: (taskId: string, taskTitle: string) => void;
     pauseTimer: () => void;
     stopTimer: () => void;
+    resetTimer: () => void;
     formatTime: (seconds: number) => string;
 }
 
@@ -130,6 +131,15 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         setElapsedTime(0);
     };
 
+    const resetTimer = () => {
+        setState(prev => ({
+            ...prev,
+            startTime: prev.isRunning ? Date.now() : null,
+            accumulatedTime: 0
+        }));
+        setElapsedTime(0);
+    };
+
     const formatTime = (seconds: number) => {
         const h = Math.floor(seconds / 3600);
         const m = Math.floor((seconds % 3600) / 60);
@@ -150,6 +160,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
             startTimer,
             pauseTimer,
             stopTimer,
+            resetTimer,
             formatTime
         }}>
             {children}

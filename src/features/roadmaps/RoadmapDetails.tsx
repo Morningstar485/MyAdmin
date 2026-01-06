@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, Search, FileText, List, GripVertical, ChevronDown, ChevronRight, CheckCircle2, Circle, Plus, X, Loader2, Link as LinkIcon, PanelRightOpen, PanelRightClose } from 'lucide-react';
+import { ChevronLeft, Search, FileText, List, GripVertical, ChevronDown, ChevronRight, CheckCircle2, Circle, Plus, X, Loader2, Link as LinkIcon, PanelRightOpen, PanelRightClose, GitBranch } from 'lucide-react';
 import { fetchRoadmapById, fetchMilestonesForRoadmap, updateRoadmapItem, createMilestone, createRoadmapItem, fetchLibraryResources } from '../../services/roadmapService';
-import type { Roadmap, MilestoneWithItems, RoadmapItem } from './types';
+import { getDetoursByTaskId, createDetour, completeDetour } from '../../services/detourService';
+import type { Roadmap, MilestoneWithItems, RoadmapItem, RoadmapDetour } from './types';
 import type { Resource } from '../learning/types';
 import { motion, AnimatePresence } from 'framer-motion';
+import { DetourVisualizer } from './components/DetourVisualizer';
 
 interface RoadmapDetailsProps {
     roadmapId: string;
@@ -17,6 +19,10 @@ export function RoadmapDetails({ roadmapId, onBack }: RoadmapDetailsProps) {
     const [loading, setLoading] = useState(true);
     const [expandedMilestones, setExpandedMilestones] = useState<Set<string>>(new Set());
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+    // Detour State
+    const [selectedTask, setSelectedTask] = useState<RoadmapItem | null>(null);
+    const [taskDetours, setTaskDetours] = useState<RoadmapDetour[]>([]);
 
     // UI State for adding milestones/tasks
     const [isAddingMilestone, setIsAddingMilestone] = useState(false);
@@ -49,6 +55,34 @@ export function RoadmapDetails({ roadmapId, onBack }: RoadmapDetailsProps) {
         init();
     }, [roadmapId]);
 
+    // Fetch detours when a task is selected
+    useEffect(() => {
+        async function fetchDetours() {
+            if (!selectedTask) {
+                setTaskDetours([]);
+                return;
+            }
+            const data = await getDetoursByTaskId(selectedTask.id);
+            setTaskDetours(data);
+        }
+        fetchDetours();
+    }, [selectedTask]);
+
+    const handleCreateDetour = async (title: string, justification?: string) => {
+        if (!selectedTask) return;
+        const newDetour = await createDetour(selectedTask.id, title, justification);
+        if (newDetour) {
+            setTaskDetours(prev => [newDetour, ...prev]);
+        }
+    };
+
+    const handleCompleteDetour = async (detourId: string) => {
+        const updated = await completeDetour(detourId);
+        if (updated) {
+            setTaskDetours(prev => prev.map(d => d.id === detourId ? updated : d));
+        }
+    };
+
     const toggleMilestone = (id: string) => {
         const newExpanded = new Set(expandedMilestones);
         if (newExpanded.has(id)) {
@@ -60,6 +94,21 @@ export function RoadmapDetails({ roadmapId, onBack }: RoadmapDetailsProps) {
     };
 
     const handleToggleItem = async (itemId: string, isCompleted: boolean) => {
+        // Find which milestone this item belongs to
+        const milestoneIndex = milestones.findIndex(m => m.roadmap_items.some(i => i.id === itemId));
+        if (milestoneIndex === -1) return;
+
+        // Validation: Verify previous milestone is completed (if it exists)
+        if (isCompleted && milestoneIndex > 0) {
+            const previousMilestone = milestones[milestoneIndex - 1];
+            const incompleteTasks = previousMilestone.roadmap_items.filter(i => !i.is_completed);
+
+            if (incompleteTasks.length > 0) {
+                alert(`Please complete all tasks in "${previousMilestone.title}" before proceeding.`);
+                return;
+            }
+        }
+
         const updated = await updateRoadmapItem(itemId, { is_completed: isCompleted });
         if (updated) {
             await loadData(); // Refresh to get updated progress in headers
@@ -150,15 +199,20 @@ export function RoadmapDetails({ roadmapId, onBack }: RoadmapDetailsProps) {
                     </button>
 
                     <button
-                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                        onClick={() => {
+                            if (selectedTask) setSelectedTask(null); // Close detour if open
+                            setIsSidebarOpen(!isSidebarOpen);
+                        }}
                         className={`p-2.5 rounded-xl border transition-all active:scale-95 flex items-center gap-2 ${isSidebarOpen
                             ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
                             : 'bg-slate-900 border-white/5 text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
-                        title={isSidebarOpen ? "Hide Library" : "Show Library"}
+                        title={isSidebarOpen ? "Hide Panel" : "Show Panel"}
                     >
                         {isSidebarOpen ? <PanelRightClose size={20} /> : <PanelRightOpen size={20} />}
-                        <span className="text-xs font-bold uppercase tracking-widest hidden md:inline">Library</span>
+                        <span className="text-xs font-bold uppercase tracking-widest hidden md:inline">
+                            {selectedTask ? 'Detour' : 'Library'}
+                        </span>
                     </button>
                 </div>
             </header>
@@ -235,6 +289,11 @@ export function RoadmapDetails({ roadmapId, onBack }: RoadmapDetailsProps) {
                                         onToggleItem={handleToggleItem}
                                         onAddTask={handleAddTask}
                                         onAssignResource={handleAssignResource}
+                                        onSelectTask={(task) => {
+                                            setSelectedTask(task);
+                                            setIsSidebarOpen(true); // Auto-open sidebar on selection
+                                        }}
+                                        selectedTaskId={selectedTask?.id || null}
                                     />
                                 ))}
                             </div>
@@ -242,63 +301,75 @@ export function RoadmapDetails({ roadmapId, onBack }: RoadmapDetailsProps) {
                     </div>
                 </main>
 
-                {/* Right Panel: Library (Resources) */}
+                {/* Right Panel: Library OR Detour (Swappable) */}
                 <AnimatePresence initial={false}>
                     {isSidebarOpen && (
                         <motion.aside
                             initial={{ width: 0, opacity: 0 }}
-                            animate={{ width: 280, opacity: 1 }}
+                            animate={{ width: selectedTask ? 400 : 280, opacity: 1 }} // Wider for Detour
                             exit={{ width: 0, opacity: 0 }}
                             transition={{ duration: 0.3, ease: 'easeInOut' }}
                             className="border-l border-white/5 flex flex-col bg-slate-900/20 shrink-0 overflow-hidden"
                         >
-                            <div className="p-6 flex-1 overflow-y-auto min-w-[280px]">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-sm font-bold text-slate-200 uppercase tracking-widest">
-                                        Library
-                                    </h3>
-                                    <button
-                                        onClick={() => setIsSidebarOpen(false)}
-                                        className="p-1.5 hover:bg-white/5 rounded-lg text-slate-500 hover:text-white transition-all"
-                                    >
-                                        <PanelRightClose size={18} />
-                                    </button>
-                                </div>
-                                <div className="relative mb-6">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
-                                    <input
-                                        type="text"
-                                        placeholder="Search library..."
-                                        className="w-full bg-slate-950 border border-white/5 rounded-xl py-2 pl-10 pr-4 text-xs text-slate-300 placeholder:text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all shadow-inner"
-                                    />
-                                </div>
+                            {selectedTask ? (
+                                <DetourVisualizer
+                                    taskId={selectedTask.id}
+                                    taskTitle={selectedTask.title}
+                                    detours={taskDetours}
+                                    onCreateDetour={handleCreateDetour}
+                                    onCompleteDetour={handleCompleteDetour}
+                                    onClose={() => setSelectedTask(null)}
+                                />
+                            ) : (
+                                <div className="p-6 flex-1 overflow-y-auto min-w-[280px]">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-sm font-bold text-slate-200 uppercase tracking-widest">
+                                            Library
+                                        </h3>
+                                        <button
+                                            onClick={() => setIsSidebarOpen(false)}
+                                            className="p-1.5 hover:bg-white/5 rounded-lg text-slate-500 hover:text-white transition-all"
+                                        >
+                                            <PanelRightClose size={18} />
+                                        </button>
+                                    </div>
 
-                                <div className="space-y-2">
-                                    {libraryResources.length === 0 ? (
-                                        <div className="py-10 text-center">
-                                            <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">No resources found</p>
-                                        </div>
-                                    ) : (
-                                        libraryResources.map(res => (
-                                            <div
-                                                key={res.id}
-                                                draggable
-                                                onDragStart={(e) => onDragStart(e, res.id)}
-                                                className="p-3 bg-slate-900/40 border border-white/5 rounded-xl flex items-center gap-3 group cursor-grab active:cursor-grabbing hover:border-emerald-500/30 hover:bg-slate-800/40 transition-all"
-                                            >
-                                                <GripVertical size={14} className="text-slate-700 group-hover:text-slate-500" />
-                                                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/10 transition-colors group-hover:bg-emerald-500/20">
-                                                    <FileText size={16} className="text-emerald-400" />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-xs text-slate-300 truncate font-medium">{res.title}</p>
-                                                    <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest mt-0.5">{res.type || 'Resource'}</p>
-                                                </div>
+                                    <div className="relative mb-6">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
+                                        <input
+                                            type="text"
+                                            placeholder="Search library..."
+                                            className="w-full bg-slate-950 border border-white/5 rounded-xl py-2 pl-10 pr-4 text-xs text-slate-300 placeholder:text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all shadow-inner"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        {libraryResources.length === 0 ? (
+                                            <div className="py-10 text-center">
+                                                <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">No resources found</p>
                                             </div>
-                                        ))
-                                    )}
+                                        ) : (
+                                            libraryResources.map(res => (
+                                                <div
+                                                    key={res.id}
+                                                    draggable
+                                                    onDragStart={(e) => onDragStart(e, res.id)}
+                                                    className="p-3 bg-slate-900/40 border border-white/5 rounded-xl flex items-center gap-3 group cursor-grab active:cursor-grabbing hover:border-emerald-500/30 hover:bg-slate-800/40 transition-all"
+                                                >
+                                                    <GripVertical size={14} className="text-slate-700 group-hover:text-slate-500" />
+                                                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/10 transition-colors group-hover:bg-emerald-500/20">
+                                                        <FileText size={16} className="text-emerald-400" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-xs text-slate-300 truncate font-medium">{res.title}</p>
+                                                        <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest mt-0.5">{res.type || 'Resource'}</p>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </motion.aside>
                     )}
                 </AnimatePresence>
@@ -314,7 +385,9 @@ function MilestoneAccordion({
     onToggle,
     onToggleItem,
     onAddTask,
-    onAssignResource
+    onAssignResource,
+    onSelectTask,
+    selectedTaskId
 }: {
     milestone: MilestoneWithItems;
     index: number;
@@ -323,6 +396,8 @@ function MilestoneAccordion({
     onToggleItem: (id: string, completed: boolean) => Promise<void>;
     onAddTask: (milestoneId: string, title: string) => Promise<void>;
     onAssignResource: (itemId: string, resourceId: string) => Promise<void>;
+    onSelectTask: (task: RoadmapItem) => void;
+    selectedTaskId: string | null;
 }) {
     const itemsCount = milestone.roadmap_items.length;
     const completedItems = milestone.roadmap_items.filter(i => i.is_completed).length;
@@ -433,6 +508,8 @@ function MilestoneAccordion({
                                         item={item}
                                         onToggle={() => onToggleItem(item.id, !item.is_completed)}
                                         onDrop={(resourceId) => onAssignResource(item.id, resourceId)}
+                                        onSelect={() => onSelectTask(item)}
+                                        isSelected={selectedTaskId === item.id}
                                     />
                                 ))}
 
@@ -469,7 +546,7 @@ function MilestoneAccordion({
     );
 }
 
-function RoadmapItemRow({ item, onToggle, onDrop }: { item: RoadmapItem, onToggle: () => void, onDrop: (resourceId: string) => void }) {
+function RoadmapItemRow({ item, onToggle, onDrop, onSelect, isSelected }: { item: RoadmapItem, onToggle: () => void, onDrop: (resourceId: string) => void, onSelect: () => void, isSelected: boolean }) {
     const [isOver, setIsOver] = useState(false);
 
     const handleDragOver = (e: React.DragEvent) => {
@@ -493,20 +570,28 @@ function RoadmapItemRow({ item, onToggle, onDrop }: { item: RoadmapItem, onToggl
     return (
 
         <div
+            onClick={onSelect}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className={`flex flex-col gap-1.5 p-3 rounded-xl border transition-all duration-300 group ${isOver
+            className={`flex flex-col gap-1.5 p-3 rounded-xl border transition-all duration-300 group cursor-pointer relative overflow-hidden ${isOver
                 ? 'bg-emerald-500/10 border-emerald-500 scale-[1.02]'
-                : item.is_completed
-                    ? 'bg-slate-950/40 border-white/20 opacity-80'
-                    : 'bg-slate-950/60 border-white/20 hover:border-emerald-500/20 hover:bg-slate-950/80'
+                : isSelected
+                    ? 'bg-slate-800/80 border-indigo-500/50 shadow-lg shadow-indigo-500/10'
+                    : item.is_completed
+                        ? 'bg-slate-950/40 border-white/20 opacity-80 '
+                        : 'bg-slate-950/60 border-white/20 hover:border-emerald-500/20 hover:bg-slate-950/80'
                 }`}
         >
-            <div className="flex items-center justify-between">
+            {isSelected && <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500" />}
+
+            <div className="flex items-center justify-between z-10">
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={onToggle}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onToggle();
+                        }}
                         className={`transition-all duration-300 p-1 rounded-lg ${item.is_completed ? 'text-emerald-500 hover:scale-110' : 'text-slate-700 hover:text-emerald-400'
                             }`}>
                         {item.is_completed ? <CheckCircle2 size={18} /> : <Circle size={18} />}

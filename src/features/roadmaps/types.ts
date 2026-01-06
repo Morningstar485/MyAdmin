@@ -39,3 +39,13 @@ export interface RoadmapItem {
 export interface MilestoneWithItems extends RoadmapMilestone {
     roadmap_items: RoadmapItem[];
 }
+
+export interface RoadmapDetour {
+    id: string;
+    parent_task_id: string;
+    title: string;
+    justification: string | null;
+    status: 'active' | 'merged' | 'abandoned';
+    created_at: string;
+    completed_at: string | null;
+}

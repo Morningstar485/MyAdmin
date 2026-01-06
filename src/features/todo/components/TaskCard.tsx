@@ -48,7 +48,7 @@ export function TaskCard({ todo, onToggle, isEditing, onEdit, onClick, isCompact
             className={`
                 group relative border
                 transition-all duration-300 ease-out
-                ${isCompact ? 'p-2 rounded-lg' : 'p-4 rounded-xl'}
+                ${isCompact ? 'p-2 rounded-lg' : 'p-3 rounded-lg'}
                 bg-slate-800/40 border-slate-700/50 hover:border-slate-600 hover:bg-slate-800/80 hover:shadow-xl hover:shadow-black/20
                 ${(isCompleted || isArchived) ? 'opacity-50 hover:opacity-100 grayscale-[0.5]' : ''}
                 ${isEditing ? `cursor-pointer border-solid hover:ring-2 ${hoverClass}` : ''}
@@ -63,7 +63,7 @@ export function TaskCard({ todo, onToggle, isEditing, onEdit, onClick, isCompact
             }}
         >
             {/* Top Row: Checkbox | Title | Date & Icons */}
-            <div className="flex justify-between items-start gap-3">
+            <div className="flex justify-between items-start gap-2">
 
                 {/* Checkbox (Left) */}
                 <div className="pt-0.5 shrink-0">
@@ -88,7 +88,7 @@ export function TaskCard({ todo, onToggle, isEditing, onEdit, onClick, isCompact
                 {/* Left: Title */}
                 <h3 className={`
                     font-medium text-slate-200 leading-snug truncate flex-1
-                    ${isCompact ? 'text-sm' : 'text-[15px]'}
+                    ${isCompact ? 'text-sm' : 'text-sm'}
                     ${isCompleted ? 'line-through decoration-slate-600' : ''}
                 `}>
                     {todo.title}
@@ -97,7 +97,7 @@ export function TaskCard({ todo, onToggle, isEditing, onEdit, onClick, isCompact
                 {/* Right: Date & Icons */}
                 <div className="flex items-center gap-2 shrink-0">
                     {dueDate && (
-                        <span className={`text-xs font-medium ${hoursLeft && hoursLeft < 0 ? 'text-red-400' :
+                        <span className={`text-[10px] font-medium ${hoursLeft && hoursLeft < 0 ? 'text-red-400' :
                             hoursLeft && hoursLeft < 10 ? 'text-yellow-400' : 'text-slate-400'
                             }`}>
                             {dateDisplay}
@@ -124,7 +124,7 @@ export function TaskCard({ todo, onToggle, isEditing, onEdit, onClick, isCompact
             </div>
 
             {/* Bottom Row: Tags | Duration */}
-            <div className="flex justify-between items-end mt-4">
+            <div className="flex justify-between items-end mt-2">
                 {/* Left: Tags / Plan */}
                 <div className="flex flex-wrap items-center gap-2">
                     {todo.plan && (
@@ -146,7 +146,7 @@ export function TaskCard({ todo, onToggle, isEditing, onEdit, onClick, isCompact
 
                 {/* Right: Duration */}
                 {todo.duration && todo.duration > 0 && (
-                    <div className="text-xs text-slate-500 font-medium">
+                    <div className="text-[10px] text-slate-500 font-medium">
                         {todo.duration}min
                     </div>
                 )}
