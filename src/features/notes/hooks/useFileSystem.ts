@@ -15,6 +15,8 @@ export function useFileSystem(workspaceProp: string | null = null, initialFolder
     const [breadcrumbs, setBreadcrumbs] = useState<Breadcrumb[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [totalNotesCount, setTotalNotesCount] = useState(0);
+    const [totalFoldersCount, setTotalFoldersCount] = useState(0);
 
     const { workspace: contextWorkspace } = useWorkspace();
     const workspace = workspaceProp || contextWorkspace;
@@ -40,7 +42,7 @@ export function useFileSystem(workspaceProp: string | null = null, initialFolder
             if (foldersError) throw foldersError;
             setFolders(foldersData as Folder[]);
 
-            // 2. Fetch Notes
+            // 2. Fetch Notes (Current Folder)
             let notesQuery = supabase
                 .from('notes')
                 .select('*')
@@ -67,6 +69,24 @@ export function useFileSystem(workspaceProp: string | null = null, initialFolder
             } else {
                 setBreadcrumbs([]);
             }
+
+            // 4. Fetch Total Notes Count (For Header Stats)
+            const { count: notesCount, error: notesCountError } = await supabase
+                .from('notes')
+                .select('*', { count: 'exact', head: true })
+                .eq('workspace', workspace);
+
+            if (notesCountError) throw notesCountError;
+            setTotalNotesCount(notesCount || 0);
+
+            // 5. Fetch Total Folders Count (For Header Stats)
+            const { count: foldersCount, error: foldersCountError } = await supabase
+                .from('folders')
+                .select('*', { count: 'exact', head: true })
+                .eq('workspace', workspace);
+
+            if (foldersCountError) throw foldersCountError;
+            setTotalFoldersCount(foldersCount || 0);
 
         } catch (err: any) {
             console.error('Error fetching directory:', err);
@@ -126,6 +146,8 @@ export function useFileSystem(workspaceProp: string | null = null, initialFolder
         currentFolderId,
         folders,
         notes,
+        totalNotesCount,
+        totalFoldersCount,
         breadcrumbs,
         isLoading,
         error,

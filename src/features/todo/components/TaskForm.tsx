@@ -39,10 +39,7 @@ export function TaskForm({ initialValues, availableTags, onSubmit, onCreateTag, 
             return;
         }
 
-        if (!dueDate) {
-            alert("Due Date is required!");
-            return;
-        }
+
 
         const durationVal = parseInt(duration);
         if (!duration || isNaN(durationVal) || durationVal <= 0 || !Number.isInteger(Number(duration))) {
@@ -127,7 +124,7 @@ export function TaskForm({ initialValues, availableTags, onSubmit, onCreateTag, 
 
             {/* Due Date Input */}
             <div>
-                <label htmlFor="dueDate" className="block text-sm font-medium text-slate-300 mb-1">Due Date <span className="text-red-400">*</span></label>
+                <label htmlFor="dueDate" className="block text-sm font-medium text-slate-300 mb-1">Due Date</label>
                 <input
                     id="dueDate"
                     type="datetime-local"

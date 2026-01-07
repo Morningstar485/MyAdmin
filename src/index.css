@@ -42,6 +42,28 @@ body {
   /* slate-600 */
 }
 
+/* Explicit class for Planner Columns */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  /* Increased width */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+  /* Slight track background for contrast */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #64748b;
+  /* Lighter (slate-500) for better visibility */
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+  /* slate-400 on hover */
+}
+
 /* Hide number input spinners */
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {

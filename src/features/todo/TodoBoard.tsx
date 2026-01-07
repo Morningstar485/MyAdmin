@@ -48,6 +48,17 @@ export function TodoBoard({ workspace: workspaceProp }: { workspace?: string }) 
     const [selectedTask, setSelectedTask] = useState<Todo | null>(null);
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
+    // Mobile Tabs State
+    const [isMobile, setIsMobile] = useState(false);
+    const [activeMobileTab, setActiveMobileTab] = useState<string>('Today');
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.matchMedia('(max-width: 1024px)').matches);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
     // DnD State
     const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -101,11 +112,6 @@ export function TodoBoard({ workspace: workspaceProp }: { workspace?: string }) 
                 }));
                 // Set initial todos
                 setTodos(formattedTodos as Todo[]);
-
-                if (formattedTodos.length > 0) {
-                    console.log('[Fetch] First Task Keys:', Object.keys(formattedTodos[0]));
-                    console.log('[Fetch] First Task GID:', formattedTodos[0].google_task_id);
-                }
 
                 // --- Trigger Incoming Sync ---
                 syncWithGoogle(formattedTodos as Todo[]);
@@ -477,6 +483,10 @@ export function TodoBoard({ workspace: workspaceProp }: { workspace?: string }) 
     const completedTasks = todos.filter(t => t.completed).length;
     const completionPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
+    const displayedColumns = isMobile
+        ? columns.filter(c => c.status === activeMobileTab)
+        : columns;
+
     return (
         <DndContext
             sensors={sensors}
@@ -527,18 +537,39 @@ export function TodoBoard({ workspace: workspaceProp }: { workspace?: string }) 
                     </div>
                 </PageHeader>
 
+                {isMobile && (
+                    <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-1 mb-4">
+                        {columns.map(col => (
+                            <button
+                                key={col.status}
+                                onClick={() => setActiveMobileTab(col.status)}
+                                className={`
+                                    flex-1 py-1.5 text-xs font-medium rounded-md transition-all
+                                    ${activeMobileTab === col.status
+                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
+                                        : 'text-slate-500 hover:text-slate-300'
+                                    }
+                                `}
+                            >
+                                {col.title}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
                 <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-[1fr_1fr_1fr_240px] gap-6 overflow-y-auto lg:overflow-hidden pb-20 lg:pb-6">
-                    {columns.map(col => (
+                    {displayedColumns.map(col => (
                         <TodoColumn
                             key={col.status}
                             title={col.title}
-                            status={col.status}
-                            todos={getColumnTodos(col.status)}
+                            status={col.status as TodoStatus}
+                            todos={getColumnTodos(col.status as TodoStatus)}
                             onToggle={handleToggle}
                             isEditing={isEditMode}
                             onDelete={handleDelete}
                             onEdit={setEditingTask}
                             onTaskClick={handleTaskClick}
+                            isMobile={isMobile}
                         />
                     ))}
 

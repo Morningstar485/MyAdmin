@@ -1,30 +1,28 @@
 import { useDroppable } from '@dnd-kit/core';
-import type { Folder } from '../types';
-import { FolderCard } from './FolderCard';
+import type { ReactNode } from 'react';
 
 interface DroppableFolderProps {
-    folder: Folder;
-    onClick: () => void;
+    folderId: string;
+    children: ReactNode;
+    className?: string; // To allow merging classes if needed
 }
 
-export function DroppableFolder({ folder, onClick }: DroppableFolderProps) {
-    const { setNodeRef, isOver } = useDroppable({
-        id: `folder-${folder.id}`,
+export function DroppableFolder({ folderId, children, className = '' }: DroppableFolderProps) {
+    const { isOver, setNodeRef } = useDroppable({
+        id: `folder-${folderId}`,
         data: {
             type: 'folder',
-            folder
+            id: folderId
         }
     });
 
     return (
         <div
             ref={setNodeRef}
-            className={`transition-all rounded-xl ${isOver ? 'ring-2 ring-indigo-500 scale-105 bg-indigo-500/10' : ''}`}
+            className={`transition-all duration-200 rounded-2xl ${isOver ? 'ring-2 ring-indigo-400 bg-indigo-500/10 scale-[1.02]' : ''
+                } ${className}`}
         >
-            <FolderCard
-                folder={folder}
-                onClick={onClick}
-            />
+            {children}
         </div>
     );
 }

@@ -13,9 +13,10 @@ interface TodoColumnProps {
     onDelete?: (id: string) => void;
     onEdit?: (todo: Todo) => void;
     onTaskClick?: (todo: Todo) => void;
+    isMobile?: boolean;
 }
 
-export function TodoColumn({ title, status, todos, onToggle, isEditing, onDelete, onEdit, onTaskClick }: TodoColumnProps) {
+export function TodoColumn({ title, status, todos, onToggle, isEditing, onDelete, onEdit, onTaskClick, isMobile }: TodoColumnProps) {
     const { setNodeRef } = useDroppable({
         id: status,
     });
@@ -29,10 +30,15 @@ export function TodoColumn({ title, status, todos, onToggle, isEditing, onDelete
     const todoIds = useMemo(() => todos.map(t => t.id), [todos]);
 
     return (
-        <div className="flex flex-col h-full min-w-[280px] overflow-hidden">
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 px-1">{title}</h2>
+        <div className={`flex flex-col h-full overflow-hidden ${isMobile ? 'min-w-full' : 'min-w-[280px]'}`}>
+            {!isMobile && (
+                <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 px-1">{title}</h2>
+            )}
 
-            <div className="flex-1 flex flex-col border border-slate-700/50 rounded-2xl bg-slate-900/20 overflow-hidden relative min-h-0">
+            <div className={`
+                flex-1 flex flex-col overflow-hidden relative min-h-0
+                ${isMobile ? '' : 'border border-slate-700/50 rounded-2xl bg-slate-900/20'}
+            `}>
                 <SortableContext items={todoIds} strategy={verticalListSortingStrategy}>
                     <div
                         ref={setNodeRef}

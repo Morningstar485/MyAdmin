@@ -15,7 +15,7 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { PageHeader } from '../../components/PageHeader';
 import { supabase } from '../../lib/supabase';
 import { useWorkspace } from '../../contexts/WorkspaceContext';
-import { type Plan, type PlanStatus, type Todo } from '../todo/types';
+import { type Plan, type PlanStatus, type Todo, type Tag, TAG_COLORS } from '../todo/types';
 import { PlanCard } from './components/PlanCard';
 import { TaskCard } from '../todo/components/TaskCard';
 import { Plus } from 'lucide-react';
@@ -41,6 +41,12 @@ export function PlannerBoard({ workspace: workspaceProp }: { workspace?: string 
     const [activeId, setActiveId] = useState<string | null>(null);
     const [activeType, setActiveType] = useState<'plan' | 'task' | null>(null);
     const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+
+    // Tags State
+    const [tags, setTags] = useState<Tag[]>([]);
+    const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+    const [newTagName, setNewTagName] = useState('');
+    const [isCreatingTag, setIsCreatingTag] = useState(false);
 
     const [isMobile, setIsMobile] = useState(false);
 
@@ -103,6 +109,13 @@ export function PlannerBoard({ workspace: workspaceProp }: { workspace?: string 
 
         if (notesData) setNotes(notesData);
 
+        // Fetch Tags
+        const { data: tagsData } = await supabase
+            .from('tags')
+            .select('*')
+            .eq('workspace', workspace);
+        if (tagsData) setTags(tagsData);
+
         // Fetch Todos
         const { data: todosData } = await supabase
             .from('todos')
@@ -124,6 +137,31 @@ export function PlannerBoard({ workspace: workspaceProp }: { workspace?: string 
         }
     }
 
+    const handleCreateTag = async () => {
+        if (!newTagName.trim()) return;
+
+        const randomColor = TAG_COLORS[Math.floor(Math.random() * TAG_COLORS.length)].value;
+        const newTag = {
+            name: newTagName,
+            color: randomColor,
+            workspace
+        };
+
+        const { data, error } = await supabase.from('tags').insert([newTag]).select().single();
+        if (error) {
+            console.error('Error creating tag:', error);
+            alert('Failed to create tag');
+            return;
+        }
+
+        if (data) {
+            setTags(prev => [...prev, data]);
+            setSelectedTagId(data.id);
+            setNewTagName('');
+            setIsCreatingTag(false);
+        }
+    };
+
     const handleCreatePlan = async () => {
         if (!newPlanTitle.trim()) return;
 
@@ -133,7 +171,8 @@ export function PlannerBoard({ workspace: workspaceProp }: { workspace?: string 
             title: newPlanTitle,
             description: newPlanDescription,
             status: defaultStatus,
-            workspace
+            workspace,
+            tag_id: selectedTagId || null
         };
 
         const { data, error } = await supabase.from('plans').insert([newPlan]).select().single();
@@ -147,6 +186,7 @@ export function PlannerBoard({ workspace: workspaceProp }: { workspace?: string 
             setPlans(prev => [...prev, data as Plan]);
             setNewPlanTitle('');
             setNewPlanDescription('');
+            setSelectedTagId(null);
             setIsCreateModalOpen(false);
         }
     };
@@ -240,7 +280,7 @@ export function PlannerBoard({ workspace: workspaceProp }: { workspace?: string 
         const newTask = {
             title,
             plan_id: planId,
-            status: 'Today',
+            status: 'Later',
             completed: false
         };
 
@@ -253,9 +293,30 @@ export function PlannerBoard({ workspace: workspaceProp }: { workspace?: string 
         }
 
         if (data) {
+            const plan = plans.find(p => p.id === planId);
+            const taskTags: Tag[] = [];
+
+            if (data.todo_tags) {
+                data.todo_tags.forEach((tt: any) => {
+                    if (tt.tag) taskTags.push(tt.tag);
+                });
+            }
+
+            // Auto-assign Plan Tag
+            if (plan?.tag_id) {
+                const { error: tagError } = await supabase
+                    .from('todo_tags')
+                    .insert({ todo_id: data.id, tag_id: plan.tag_id });
+
+                if (!tagError) {
+                    const inheritedTag = tags.find(t => t.id === plan.tag_id);
+                    if (inheritedTag) taskTags.push(inheritedTag);
+                }
+            }
+
             const formattedTask: Todo = {
                 ...data,
-                tags: data.todo_tags ? data.todo_tags.map((tt: any) => tt.tag).filter(Boolean) : []
+                tags: taskTags
             };
             setAllTasks(prev => [...prev, formattedTask]);
         }
@@ -396,7 +457,7 @@ export function PlannerBoard({ workspace: workspaceProp }: { workspace?: string 
                     </div>
                 </PageHeader>
 
-                <div className="flex-1 overflow-x-hidden overflow-y-auto lg:overflow-x-auto lg:overflow-y-hidden pb-6 relative">
+                <div className="flex-1 min-h-0 overflow-x-hidden overflow-y-auto lg:overflow-x-auto lg:overflow-y-hidden pb-6 relative">
                     <div className="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:min-w-[800px] min-w-full pb-20 lg:pb-0">
                         {columns.map(col => (
                             <DroppableColumn
@@ -480,6 +541,66 @@ export function PlannerBoard({ workspace: workspaceProp }: { workspace?: string 
                             value={newPlanDescription}
                             onChange={e => setNewPlanDescription(e.target.value)}
                         />
+
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="text-xs text-slate-400">Auto-Apply Tag</label>
+                                {!isCreatingTag ? (
+                                    <button
+                                        onClick={() => setIsCreatingTag(true)}
+                                        className="text-[10px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                                    >
+                                        <Plus size={12} /> New Tag
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => setIsCreatingTag(false)}
+                                        className="text-[10px] text-slate-500 hover:text-slate-300"
+                                    >
+                                        Cancel
+                                    </button>
+                                )}
+                            </div>
+
+                            {isCreatingTag && (
+                                <div className="flex gap-2 mb-3 animate-in slide-in-from-top-1">
+                                    <input
+                                        type="text"
+                                        placeholder="Tag Name"
+                                        className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-indigo-500"
+                                        value={newTagName}
+                                        onChange={e => setNewTagName(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && handleCreateTag()}
+                                    />
+                                    <button
+                                        onClick={handleCreateTag}
+                                        className="bg-indigo-600 text-white px-3 py-1 rounded text-xs font-bold"
+                                    >
+                                        Add
+                                    </button>
+                                </div>
+                            )}
+
+                            <div className="flex flex-wrap gap-2">
+                                <button
+                                    onClick={() => setSelectedTagId(null)}
+                                    className={`text-xs px-2 py-1 rounded border transition-colors ${!selectedTagId ? 'bg-slate-700 border-indigo-500 text-white' : 'border-slate-700 text-slate-400 hover:border-slate-600'}`}
+                                >
+                                    None
+                                </button>
+                                {tags.map(tag => (
+                                    <button
+                                        key={tag.id}
+                                        onClick={() => setSelectedTagId(tag.id === selectedTagId ? null : tag.id)}
+                                        className={`text-xs px-2 py-1 rounded border transition-colors flex items-center gap-1 ${selectedTagId === tag.id ? 'bg-slate-700 border-indigo-500 text-white' : 'border-slate-700 text-slate-400 hover:border-slate-600'}`}
+                                    >
+                                        <div className={`w-2 h-2 rounded-full ${tag.color}`} />
+                                        {tag.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         <div className="flex justify-end gap-3 pt-2">
                             <button
                                 onClick={() => setIsCreateModalOpen(false)}
@@ -556,7 +677,7 @@ function DroppableColumn({
         <div
             ref={setNodeRef}
             className={`
-                flex-1 min-w-[250px] h-full flex flex-col rounded-xl px-2 py-4 border border-slate-800/50 bg-slate-900/30 backdrop-blur-sm transition-colors
+                flex-1 min-w-[250px] min-h-0 h-full flex flex-col rounded-xl px-2 py-4 border border-slate-800/50 bg-slate-900/30 backdrop-blur-sm transition-colors
                 ${isOver ? 'bg-slate-800/50 ring-2 ring-indigo-500/50' : ''}
             `}
         >
@@ -573,7 +694,7 @@ function DroppableColumn({
                 </span>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar p-2">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-3 custom-scrollbar p-2">
                 {plans.filter(p => p.status === col.status).map(plan => {
                     const planTasks = allTasks.filter(t => t.plan_id === plan.id);
                     const completed = planTasks.filter(t => t.completed).length;

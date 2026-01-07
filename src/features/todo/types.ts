@@ -15,6 +15,7 @@ export interface Plan {
     description?: string;
     status: PlanStatus;
     created_at: string;
+    tag_id?: string;
 }
 
 export interface PlanColumn {

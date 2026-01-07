@@ -172,6 +172,7 @@ export function PlanMindMap({ planId }: PlanMindMapProps) {
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [planTagId, setPlanTagId] = useState<string | null>(null);
 
     // Refs to track current state for layout merging without dependency cycles
     const nodesRef = useRef<Node[]>([]);
@@ -192,22 +193,29 @@ export function PlanMindMap({ planId }: PlanMindMapProps) {
             const payload = {
                 title,
                 plan_id: planId,
-                status: 'Today', // Default visible status
+                status: 'Later', // Default visible status
                 parent_task_id: isRootTask ? null : parentId,
                 // New Root Tasks are Detached by default (Template style)
                 metadata: isRootTask ? { detached: true } : {},
                 user_id: (await supabase.auth.getUser()).data.user?.id
             };
 
-            const { error } = await supabase.from('todos').insert(payload);
+            const { data, error } = await supabase.from('todos').insert(payload).select().single();
             if (error) throw error;
+
+            if (planTagId && data) {
+                await supabase.from('todo_tags').insert({
+                    todo_id: data.id,
+                    tag_id: planTagId
+                });
+            }
 
             window.dispatchEvent(new CustomEvent('plan-mindmap-refresh'));
         } catch (error) {
             console.error('Error adding child task:', error);
             alert('Failed to add task');
         }
-    }, [planId]);
+    }, [planId, planTagId]);
 
     const fetchTree = useCallback(async () => {
         // Only show loading indicator on first load to prevent flicker
@@ -231,6 +239,8 @@ export function PlanMindMap({ planId }: PlanMindMapProps) {
                 .single();
 
             if (planError) throw planError;
+
+            if (planData.tag_id) setPlanTagId(planData.tag_id);
 
             // Build Tree Structure locally
             const rootNode = {
