@@ -24,7 +24,8 @@ export function TaskForm({ initialValues, availableTags, onSubmit, onCreateTag, 
         return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     });
     const [selectedTags, setSelectedTags] = useState<Tag[]>(initialValues?.tags || []);
-    const [syncToGoogle, setSyncToGoogle] = useState(true);
+    const isAlreadySynced = !!initialValues?.google_task_id;
+    const [syncToGoogle, setSyncToGoogle] = useState(isAlreadySynced ? true : (initialValues ? false : true));
 
     // New Tag State
     const [isCreatingTag, setIsCreatingTag] = useState(false);
@@ -214,14 +215,17 @@ export function TaskForm({ initialValues, availableTags, onSubmit, onCreateTag, 
             </div>
 
             <div>
-                <label className="flex items-center space-x-2 cursor-pointer group">
+                <label className={`flex items-center space-x-2 group ${isAlreadySynced ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}>
                     <input
                         type="checkbox"
                         checked={syncToGoogle}
                         onChange={(e) => setSyncToGoogle(e.target.checked)}
-                        className="form-checkbox h-4 w-4 text-indigo-500 rounded border-slate-700 bg-slate-800 transition-all group-hover:border-indigo-500/50"
+                        disabled={isAlreadySynced}
+                        className="form-checkbox h-4 w-4 text-indigo-500 rounded border-slate-700 bg-slate-800 transition-all group-hover:border-indigo-500/50 disabled:opacity-50"
                     />
-                    <span className="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">Sync to Google Tasks</span>
+                    <span className="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">
+                        {isAlreadySynced ? 'Synced with Google Tasks' : 'Sync to Google Tasks'}
+                    </span>
                 </label>
             </div>
 

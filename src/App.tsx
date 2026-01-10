@@ -13,6 +13,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { LearningWorkspace } from './features/learning/LearningWorkspace';
 import { useWorkspace } from './contexts/WorkspaceContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import HabitsPage from './features/habits/pages/HabitsPage';
 
 function AppContent() {
   const [session, setSession] = useState<Session | null>(null);
@@ -70,6 +71,8 @@ function AppContent() {
         return <PlannerBoard />;
       case 'tasks':
         return <TodoBoard />;
+      case 'habits':
+        return <HabitsPage />;
       case 'notes':
         return <NotesBoard />;
       case 'library':

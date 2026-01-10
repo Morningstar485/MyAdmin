@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { LayoutDashboard, CheckSquare, FileText, Settings, Calendar, Menu, LogOut, GraduationCap, Briefcase, BookOpen, ChevronDown, Map } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, FileText, Settings, Menu, LogOut, GraduationCap, Briefcase, BookOpen, ChevronDown, Map, CalendarSync, NotebookTabs } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useWorkspace, type WorkspaceType } from '../contexts/WorkspaceContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlobalTimerStrip } from '../components/GlobalTimerStrip';
 
-export type View = 'tasks' | 'notes' | 'dashboard' | 'settings' | 'planner' | 'library' | 'roadmap';
+export type View = 'tasks' | 'notes' | 'dashboard' | 'settings' | 'planner' | 'library' | 'roadmap' | 'habits';
 
 interface AppShellProps {
     children: React.ReactNode;
@@ -172,7 +172,7 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                     {workspace !== 'learning' ? (
                         <>
                             <NavItem
-                                icon={<Calendar size={20} />}
+                                icon={<NotebookTabs size={20} />}
                                 label="Planner"
                                 active={currentView === 'planner'}
                                 onClick={() => { onNavigate('planner'); setIsMobileOpen(false); }}
@@ -184,6 +184,13 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                                 active={currentView === 'tasks'}
                                 onClick={() => { onNavigate('tasks'); setIsMobileOpen(false); }}
                                 activeClass={getActiveClass(currentView === 'tasks')}
+                            />
+                            <NavItem
+                                icon={<CalendarSync size={20} />}
+                                label="Habits"
+                                active={currentView === 'habits'}
+                                onClick={() => { onNavigate('habits'); setIsMobileOpen(false); }}
+                                activeClass={getActiveClass(currentView === 'habits')}
                             />
                         </>
                     ) : (

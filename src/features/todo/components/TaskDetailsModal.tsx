@@ -28,9 +28,9 @@ export function TaskDetailsModal({ isOpen, onClose, todo }: TaskDetailsModalProp
                         {activeTaskId === todo.id && isRunning ? (
                             <button onClick={pauseTimer} className="p-1.5 text-amber-400 hover:bg-slate-700 rounded-md transition-colors" title="Pause Timer"><Pause size={14} className="fill-current" /></button>
                         ) : (
-                            <button onClick={() => startTimer(todo.id, todo.title)} className={`flex items-center gap-2 px-2 py-1.5 ${activeTaskId === todo.id ? 'text-green-400' : 'text-slate-400 hover:text-white'} hover:bg-slate-700 rounded-md transition-colors`} title="Start Timer">
+                            <button onClick={() => startTimer(todo.id, todo.title)} className={`flex items-center gap-2 ${activeTaskId === todo.id ? 'p-1.5 text-green-400' : 'px-2 py-1.5 text-slate-400 hover:text-white'} hover:bg-slate-700 rounded-md transition-colors`} title={activeTaskId === todo.id ? "Resume Timer" : "Start Timer"}>
                                 <Play size={14} className={activeTaskId === todo.id ? "fill-current" : ""} />
-                                <span className="text-xs font-bold">Start Timer</span>
+                                {activeTaskId !== todo.id && <span className="text-xs font-bold">Start Timer</span>}
                             </button>
                         )}
                         {activeTaskId === todo.id && (

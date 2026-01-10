@@ -67,9 +67,11 @@ export function TodoBoard({ workspace: workspaceProp }: { workspace?: string }) 
             activationConstraint: {
                 distance: 5,
             },
+            disabled: isMobile
         }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
+            disabled: isMobile
         })
     );
 
@@ -121,6 +123,7 @@ export function TodoBoard({ workspace: workspaceProp }: { workspace?: string }) 
             const { data: tagsData, error: tagsError } = await supabase
                 .from('tags')
                 .select('*')
+                .eq('workspace', workspace)
                 .order('name');
 
             if (tagsError) throw tagsError;
@@ -173,7 +176,7 @@ export function TodoBoard({ workspace: workspaceProp }: { workspace?: string }) 
     const handleCreateTag = async (name: string, color: string): Promise<Tag | null> => {
         const { data, error } = await supabase
             .from('tags')
-            .insert([{ name, color }])
+            .insert([{ name, color, workspace }])
             .select()
             .single();
 

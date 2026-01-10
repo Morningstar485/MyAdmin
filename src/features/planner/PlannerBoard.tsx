@@ -165,6 +165,11 @@ export function PlannerBoard({ workspace: workspaceProp }: { workspace?: string 
     const handleCreatePlan = async () => {
         if (!newPlanTitle.trim()) return;
 
+        if (!selectedTagId) {
+            alert("A tag is required for every plan to enable automatic task tagging.");
+            return;
+        }
+
         const defaultStatus = columns.length > 0 ? columns[0].status : 'Not Started';
 
         const newPlan = {
@@ -544,7 +549,7 @@ export function PlannerBoard({ workspace: workspaceProp }: { workspace?: string 
 
                         <div>
                             <div className="flex items-center justify-between mb-2">
-                                <label className="text-xs text-slate-400">Auto-Apply Tag</label>
+                                <label className="text-xs text-slate-400">Auto-Apply Tag <span className="text-red-400">*</span></label>
                                 {!isCreatingTag ? (
                                     <button
                                         onClick={() => setIsCreatingTag(true)}
@@ -582,12 +587,6 @@ export function PlannerBoard({ workspace: workspaceProp }: { workspace?: string 
                             )}
 
                             <div className="flex flex-wrap gap-2">
-                                <button
-                                    onClick={() => setSelectedTagId(null)}
-                                    className={`text-xs px-2 py-1 rounded border transition-colors ${!selectedTagId ? 'bg-slate-700 border-indigo-500 text-white' : 'border-slate-700 text-slate-400 hover:border-slate-600'}`}
-                                >
-                                    None
-                                </button>
                                 {tags.map(tag => (
                                     <button
                                         key={tag.id}
@@ -598,6 +597,9 @@ export function PlannerBoard({ workspace: workspaceProp }: { workspace?: string 
                                         {tag.name}
                                     </button>
                                 ))}
+                                {tags.length === 0 && !isCreatingTag && (
+                                    <span className="text-xs text-slate-500 italic">No tags available. Create one to proceed.</span>
+                                )}
                             </div>
                         </div>
 
