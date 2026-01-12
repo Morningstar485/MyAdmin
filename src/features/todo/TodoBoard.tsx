@@ -476,7 +476,12 @@ export function TodoBoard({ workspace: workspaceProp }: { workspace?: string }) 
     };
 
     const getColumnTodos = (status: TodoStatus) => {
-        return todos.filter(t => t.status === status);
+        return todos
+            .filter(t => t.status === status)
+            .sort((a, b) => {
+                if (a.completed === b.completed) return 0;
+                return a.completed ? 1 : -1;
+            });
     };
 
     const activeTask = todos.find(t => t.id === activeId);
