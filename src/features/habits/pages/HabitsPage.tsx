@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { getActiveHabits, getHabitLogs, upsertHabitLog, type Habit, type HabitLog } from '../../../services/habitService';
 import { HabitRow } from '../components/HabitRow';
 import { ConsistencyHeatmap } from '../components/ConsistencyHeatmap';
+import { VelocityChart } from '../components/VelocityChart';
+import { HabitBreakdown } from '../components/HabitBreakdown';
 import { HabitFormModal } from '../components/CreateHabitModal';
 import { Loader2, Flame, Trophy, PieChart, Plus, Edit2, X } from 'lucide-react';
 
@@ -269,31 +271,31 @@ export default function HabitsPage() {
             </div>
 
             {/* RIGHT PANEL: ANALYTICS */}
-            <div className="w-[65%] p-8 overflow-y-auto bg-slate-950">
-                <div className="max-w-4xl mx-auto flex flex-col gap-8">
+            <div className="flex-1 bg-slate-950 p-8 overflow-y-auto custom-scrollbar">
+                <div className="max-w-4xl mx-auto flex flex-col gap-6 h-full">
 
                     {/* Heatmap */}
-                    <ConsistencyHeatmap logs={recentLogs} />
+                    <ConsistencyHeatmap logs={recentLogs} totalHabitsCount={habits.length} />
 
                     {/* Stats Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 shrink-0">
                         <div className="bg-slate-900 p-6 rounded-2xl border border-white/5 shadow-sm flex items-center gap-4">
                             <div className="p-3 bg-indigo-500/10 rounded-xl text-indigo-400">
                                 <PieChart size={24} />
                             </div>
                             <div>
                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Completion</p>
-                                <p className="text-2xl font-bold text-white mt-1">{stats.completionRate}%</p>
+                                <p className="text-2xl font-bold text-white">{stats.completionRate}%</p>
                             </div>
                         </div>
 
                         <div className="bg-slate-900 p-6 rounded-2xl border border-white/5 shadow-sm flex items-center gap-4">
-                            <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400">
+                            <div className="p-3 bg-orange-500/10 rounded-xl text-orange-400">
                                 <Flame size={24} />
                             </div>
                             <div>
                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Current Streak</p>
-                                <p className="text-2xl font-bold text-white mt-1">{stats.streak} Days</p>
+                                <p className="text-2xl font-bold text-white">{stats.streak} Days</p>
                             </div>
                         </div>
 
@@ -303,10 +305,19 @@ export default function HabitsPage() {
                             </div>
                             <div>
                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Perfect Days</p>
-                                <p className="text-2xl font-bold text-white mt-1">{stats.perfectDays}</p>
+                                <p className="text-2xl font-bold text-white">{stats.perfectDays}</p>
                             </div>
                         </div>
                     </div>
+
+                    {/* Deep Dive Section */}
+
+                    {/* Velocity Chart */}
+                    <VelocityChart logs={recentLogs} totalHabitsCount={habits.length} />
+
+                    {/* Breakdown Table (Fills remaining space) */}
+                    <HabitBreakdown habits={habits} logs={recentLogs} />
+
                 </div>
             </div>
 
@@ -314,10 +325,8 @@ export default function HabitsPage() {
             <HabitFormModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
+                onSuccess={loadData}
                 initialData={editingHabit}
-                onSuccess={() => {
-                    loadData();
-                }}
             />
         </div>
     );
