@@ -38,7 +38,7 @@ export function QuickCapture() {
     };
 
     return (
-        <div className="col-span-1 md:col-span-2 row-span-1 bg-slate-900 rounded-3xl border border-slate-800 p-6 flex flex-col group focus-within:ring-2 focus-within:ring-indigo-500/50 transition-all shadow-sm">
+        <div className="col-span-1 row-span-1 bg-slate-900 rounded-3xl border border-slate-800 p-6 flex flex-col group focus-within:ring-2 focus-within:ring-indigo-500/50 transition-all shadow-sm">
             <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2 text-indigo-500">
                     <Zap size={20} className={isSaving ? 'animate-pulse' : ''} />

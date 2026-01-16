@@ -50,7 +50,7 @@ function CalendarWidget() {
     const { events, loading } = useGoogleCalendar();
 
     return (
-        <div className="col-span-1 row-span-1 bg-slate-900 rounded-3xl border border-slate-800 flex flex-col overflow-hidden h-[260px]">
+        <div className="col-span-1 row-span-1 bg-slate-900 rounded-3xl border border-slate-800 flex flex-col overflow-hidden h-full min-h-[220px]">
             <div className="p-5 border-b border-slate-800 flex items-center gap-3 bg-slate-800/20">
                 <div className="p-2 rounded-lg bg-orange-500/10 text-orange-500">
                     <CalendarIcon size={20} />

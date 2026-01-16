@@ -6,10 +6,10 @@ interface ConsistencyHeatmapProps {
 }
 
 export function ConsistencyHeatmap({ logs, totalHabitsCount }: ConsistencyHeatmapProps) {
-    // Generate last 30 days
-    const days = Array.from({ length: 30 }, (_, i) => {
+    // Generate last 60 days to fill the width
+    const days = Array.from({ length: 90 }, (_, i) => {
         const d = new Date();
-        d.setDate(d.getDate() - (29 - i));
+        d.setDate(d.getDate() - (89 - i));
         return {
             date: d.toISOString().split('T')[0],
             dayOfMonth: d.getDate(),
@@ -34,7 +34,7 @@ export function ConsistencyHeatmap({ logs, totalHabitsCount }: ConsistencyHeatma
     return (
         <div className="bg-slate-900 rounded-2xl p-4 border border-white/5">
             <h3 className="text-sm font-semibold mb-3 text-white">Consistency Grid</h3>
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-nowrap gap-1 overflow-hidden justify-end">
                 {days.map((day) => (
                     <div
                         key={day.date}
@@ -45,11 +45,6 @@ export function ConsistencyHeatmap({ logs, totalHabitsCount }: ConsistencyHeatma
                 ))}
             </div>
 
-            <div className="flex items-center justify-between mt-4 text-[10px] text-slate-400">
-                <span>Less</span>
-                <div className="h-1.5 w-24 rounded-full bg-gradient-to-r from-slate-800 via-emerald-500/50 to-emerald-500 mx-3" />
-                <span>More</span>
-            </div>
         </div>
     );
 }
