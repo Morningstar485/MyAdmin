@@ -57,7 +57,7 @@ export function FocusTriad() {
         // API
         await supabase
             .from('todos')
-            .update({ 
+            .update({
                 completed: true,
                 updated_at: new Date().toISOString()
             })
@@ -81,7 +81,7 @@ export function FocusTriad() {
     }
 
     return (
-        <div className="col-span-1 row-span-1 bg-slate-900 rounded-3xl border border-slate-800 p-6 flex flex-col overflow-hidden relative">
+        <div className="col-span-1 row-span-1 bg-slate-900 rounded-3xl border border-slate-800 p-6 flex flex-col overflow-hidden relative h-[300px]">
             {/* Header */}
             <div className="flex items-center gap-2 mb-6 text-orange-500">
                 <Target size={20} className="text-orange-500" />

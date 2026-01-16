@@ -3,7 +3,7 @@ import { ConsistencyAnchor } from './components/ConsistencyAnchor';
 import { FocusTriad } from './components/FocusTriad';
 import { ProjectWatch } from './components/ProjectWatch';
 import { QuickCapture } from './components/QuickCapture';
-import { LearningVelocity } from './components/LearningVelocity';
+import { TaskTagsDistribution } from './components/TaskTagsDistribution';
 
 export function Dashboard() {
     const today = new Date();
@@ -23,7 +23,7 @@ export function Dashboard() {
                 </header>
 
                 {/* Bento Grid */}
-                <div key="active-grid" className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 auto-rows-[minmax(180px,auto)]">
+                <div key="active-grid" className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-[0.9fr_0.9fr_1.1fr_1.1fr] gap-6 auto-rows-[minmax(120px,auto)]">
 
                     {/* Row 1 & 2 */}
                     <ConsistencyAnchor />
@@ -31,7 +31,7 @@ export function Dashboard() {
 
                     {/* Right Column Stack */}
                     <CalendarWidget />
-                    <LearningVelocity />
+                    <TaskTagsDistribution />
 
                     {/* Row 3 */}
                     <ProjectWatch />
@@ -50,7 +50,7 @@ function CalendarWidget() {
     const { events, loading } = useGoogleCalendar();
 
     return (
-        <div className="col-span-1 row-span-1 bg-slate-900 rounded-3xl border border-slate-800 flex flex-col overflow-hidden h-[340px]">
+        <div className="col-span-1 row-span-1 bg-slate-900 rounded-3xl border border-slate-800 flex flex-col overflow-hidden h-[300px]">
             <div className="p-5 border-b border-slate-800 flex items-center gap-3 bg-slate-800/20">
                 <div className="p-2 rounded-lg bg-orange-500/10 text-orange-500">
                     <CalendarIcon size={20} />

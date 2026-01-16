@@ -104,7 +104,7 @@ export function ConsistencyAnchor() {
     }
 
     return (
-        <div className="col-span-1 md:col-span-2 row-span-1 bg-slate-900 rounded-3xl border border-slate-800 p-5 flex flex-col shadow-sm">
+        <div className="col-span-1 md:col-span-2 row-span-1 bg-slate-900 rounded-3xl border border-slate-800 p-5 flex flex-col shadow-sm h-[300px]">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">

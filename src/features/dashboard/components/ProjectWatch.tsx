@@ -55,7 +55,7 @@ export function ProjectWatch() {
                     // Sort by progress descending
                     stats.sort((a: any, b: any) => b.progress - a.progress);
 
-                    setProjects(stats.slice(0, 2));
+                    setProjects(stats.slice(0, 4));
                 } else {
                     setProjects([]);
                 }
@@ -71,7 +71,7 @@ export function ProjectWatch() {
 
     if (loading) {
         return (
-            <div className="col-span-1 md:col-span-2 row-span-1 bg-slate-900 rounded-3xl border border-slate-800 p-6 flex flex-col justify-center gap-4">
+            <div className="col-span-1 row-span-2 bg-slate-900 rounded-3xl border border-slate-800 p-6 flex flex-col justify-center gap-4">
                 <div className="h-4 w-32 bg-slate-800 rounded animate-pulse"></div>
                 <div className="h-2 w-full bg-slate-800/50 rounded-full animate-pulse"></div>
                 <div className="h-2 w-2/3 bg-slate-800/50 rounded-full animate-pulse"></div>
@@ -80,7 +80,7 @@ export function ProjectWatch() {
     }
 
     return (
-        <div className="col-span-1 md:col-span-2 row-span-1 bg-slate-900 rounded-3xl border border-slate-800 p-6 flex flex-col justify-between shadow-sm">
+        <div className="col-span-1 row-span-2 bg-slate-900 rounded-3xl border border-slate-800 p-6 flex flex-col justify-between shadow-sm h-full">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2 text-indigo-500">
                     <Briefcase size={20} />
