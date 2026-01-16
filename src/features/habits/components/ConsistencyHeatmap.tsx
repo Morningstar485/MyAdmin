@@ -6,10 +6,10 @@ interface ConsistencyHeatmapProps {
 }
 
 export function ConsistencyHeatmap({ logs, totalHabitsCount }: ConsistencyHeatmapProps) {
-    // Generate last 60 days to fill the width
-    const days = Array.from({ length: 90 }, (_, i) => {
+    // Generate last 45 days
+    const days = Array.from({ length: 45 }, (_, i) => {
         const d = new Date();
-        d.setDate(d.getDate() - (89 - i));
+        d.setDate(d.getDate() - (44 - i));
         return {
             date: d.toISOString().split('T')[0],
             dayOfMonth: d.getDate(),
