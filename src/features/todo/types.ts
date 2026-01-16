@@ -50,6 +50,7 @@ export interface Todo {
     plan?: Plan; // For displaying plan details
     is_archived?: boolean;
     google_task_id?: string | null;
+    completed_at?: string | null;
 }
 
 export const TAG_COLORS = [

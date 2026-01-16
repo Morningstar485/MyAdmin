@@ -22,7 +22,7 @@ import { TaskCard } from './components/TaskCard';
 import { TaskDetailsModal } from './components/TaskDetailsModal';
 import { FocusSidebar } from './components/FocusSidebar';
 import { supabase } from '../../lib/supabase';
-import { Edit2, Trash2, X } from 'lucide-react';
+import { Edit2, Archive, X } from 'lucide-react';
 import { useGoogleTasks } from '../../hooks/useGoogleTasks';
 
 export function TodoBoard({ workspace: workspaceProp }: { workspace?: string }) {
@@ -275,15 +275,28 @@ export function TodoBoard({ workspace: workspaceProp }: { workspace?: string }) 
             newOrder = Date.now() / 1000;
         }
 
-        const { error } = await supabase
+        const isStatusChange = activeTask.status !== finalStatus;
+        const isNowDone = finalStatus === 'Done' || finalStatus === 'Completed';
+
+        const updatePayload: any = {
+            status: finalStatus,
+            order: newOrder
+            // updated_at removed as column does not exist
+        };
+
+        if (isStatusChange) {
+            updatePayload.completed = isNowDone;
+            updatePayload.completed_at = isNowDone ? new Date().toISOString() : null;
+        }
+
+        let { error } = await supabase
             .from('todos')
-            .update({
-                status: finalStatus,
-                order: newOrder
-            })
+            .update(updatePayload)
             .eq('id', activeId);
 
-        if (error) console.error('Error saving order:', error);
+        if (error) {
+            console.error('Error saving order:', error);
+        }
     }
 
 
@@ -303,13 +316,19 @@ export function TodoBoard({ workspace: workspaceProp }: { workspace?: string }) 
             googleTasks.toggleCompletion(todoToUpdate.google_task_id, newCompleted);
         }
 
-        const { error } = await supabase
+        // Supabase Update
+        let { error } = await supabase
             .from('todos')
-            .update({ completed: newCompleted })
+            .update({
+                completed: newCompleted,
+                completed_at: newCompleted ? new Date().toISOString() : null
+                // updated_at removed
+            })
             .eq('id', id);
 
         if (error) {
             console.error('Error updating task:', error);
+            // Revert on real failure
             setTodos(prev => prev.map(todo =>
                 todo.id === id ? { ...todo, completed: !newCompleted } : todo
             ));
@@ -403,9 +422,16 @@ export function TodoBoard({ workspace: workspaceProp }: { workspace?: string }) 
         }
 
         // 1. Update Todo
-        const { error } = await supabase
+        const isCompletedStatus = status === 'Done' || status === 'Completed';
+
+        let { error } = await supabase
             .from('todos')
-            .update({ title, description, status, duration, due_date })
+            .update({
+                title, description, status, duration, due_date,
+                // updated_at removed
+                completed: isCompletedStatus,
+                completed_at: isCompletedStatus ? new Date().toISOString() : null
+            })
             .eq('id', editingTask.id);
 
         if (error) {
@@ -503,7 +529,7 @@ export function TodoBoard({ workspace: workspaceProp }: { workspace?: string }) 
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
         >
-            <div className="h-full flex flex-col px-6 pt-6 touch-none">
+            <div className="h-full flex flex-col p-4 touch-none">
                 <PageHeader
                     title="My Tasks"
                     description="Manage your tasks efficiently."
@@ -513,32 +539,32 @@ export function TodoBoard({ workspace: workspaceProp }: { workspace?: string }) 
                         { label: 'Completed', value: completedTasks }
                     ]}
                 >
-                    <div className="flex items-center gap-2 lg:gap-3 flex-wrap justify-end">
+                    <div className="flex items-center gap-2 flex-wrap justify-end">
                         <button
                             onClick={handleFlush}
-                            className="px-3 py-2 lg:px-4 rounded-lg text-sm font-medium transition-all bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20"
-                            title="Delete all completed tasks"
+                            className="px-2.5 py-1.5 rounded-md text-xs font-medium transition-all bg-orange-500/10 text-orange-500 hover:bg-orange-500 hover:text-white border border-orange-500/20"
+                            title="Archive all completed tasks"
                         >
-                            <Trash2 size={18} />
+                            <Archive size={14} />
                         </button>
 
                         <button
                             onClick={() => setIsEditMode(!isEditMode)}
                             className={`
-                                px-3 py-2 lg:px-4 rounded-lg text-sm font-medium transition-all shadow-lg flex items-center gap-2
+                                px-2.5 py-1.5 rounded-md text-xs font-medium transition-all shadow-lg flex items-center gap-1.5
                                 ${isEditMode
                                     ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-orange-500/20'
                                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                                 }
                             `}
                         >
-                            {isEditMode ? <X size={18} /> : <Edit2 size={18} />}
+                            {isEditMode ? <X size={14} /> : <Edit2 size={14} />}
                             {isEditMode ? 'Done' : 'Edit'}
                         </button>
 
                         <button
                             onClick={() => setIsModalOpen(true)}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 lg:px-4 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-600/20 active:scale-95 whitespace-nowrap"
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors shadow-lg shadow-indigo-600/20 active:scale-95 whitespace-nowrap"
                         >
                             + New Task
                         </button>
@@ -565,7 +591,7 @@ export function TodoBoard({ workspace: workspaceProp }: { workspace?: string }) 
                     </div>
                 )}
 
-                <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-[1fr_1fr_1fr_240px] gap-6 overflow-y-auto lg:overflow-hidden pb-20 lg:pb-6">
+                <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-[1fr_1fr_1fr_220px] gap-6 overflow-y-auto lg:overflow-hidden pb-20 lg:pb-4">
                     {displayedColumns.map(col => (
                         <TodoColumn
                             key={col.status}

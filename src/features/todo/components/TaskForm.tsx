@@ -80,15 +80,15 @@ export function TaskForm({ initialValues, availableTags, onSubmit, onCreateTag, 
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-                <label htmlFor="title" className="block text-sm font-medium text-slate-300 mb-1">Task Title <span className="text-red-400">*</span></label>
+                <label htmlFor="title" className="block text-xs font-medium text-slate-300 mb-1">Task Title <span className="text-red-400">*</span></label>
                 <input
                     id="title"
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white caret-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder:text-slate-600"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white caret-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder:text-slate-600"
                     placeholder="What needs to be done?"
                     autoFocus
                 />
@@ -96,12 +96,12 @@ export function TaskForm({ initialValues, availableTags, onSubmit, onCreateTag, 
 
             <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <label htmlFor="status" className="block text-sm font-medium text-slate-300 mb-1">Status</label>
+                    <label htmlFor="status" className="block text-xs font-medium text-slate-300 mb-1">Status</label>
                     <select
                         id="status"
                         value={status}
                         onChange={(e) => setStatus(e.target.value as TodoStatus)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all cursor-pointer"
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all cursor-pointer"
                     >
                         <option value="Today">Today</option>
                         <option value="This Week">This Week</option>
@@ -110,14 +110,14 @@ export function TaskForm({ initialValues, availableTags, onSubmit, onCreateTag, 
                 </div>
 
                 <div>
-                    <label htmlFor="duration" className="block text-sm font-medium text-slate-300 mb-1">Duration (min) <span className="text-red-400">*</span></label>
+                    <label htmlFor="duration" className="block text-xs font-medium text-slate-300 mb-1">Duration (min) <span className="text-red-400">*</span></label>
                     <input
                         id="duration"
                         type="number"
                         min="1"
                         value={duration}
                         onChange={(e) => setDuration(e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white caret-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder:text-slate-600 appearance-none"
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white caret-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder:text-slate-600 appearance-none"
                         placeholder="e.g. 30"
                     />
                 </div>
@@ -125,13 +125,13 @@ export function TaskForm({ initialValues, availableTags, onSubmit, onCreateTag, 
 
             {/* Due Date Input */}
             <div>
-                <label htmlFor="dueDate" className="block text-sm font-medium text-slate-300 mb-1">Due Date</label>
+                <label htmlFor="dueDate" className="block text-xs font-medium text-slate-300 mb-1">Due Date</label>
                 <input
                     id="dueDate"
                     type="datetime-local"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white caret-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder:text-slate-600"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white caret-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder:text-slate-600"
                 />
             </div>
 
@@ -148,7 +148,7 @@ export function TaskForm({ initialValues, availableTags, onSubmit, onCreateTag, 
                                 type="button"
                                 onClick={() => toggleTag(tag)}
                                 className={`
-                                    flex items-center text-xs font-medium px-2.5 py-1.5 rounded-full border transition-all
+                                    flex items-center text-[10px] font-medium px-2 py-1 rounded-full border transition-all
                                     ${isSelected
                                         ? `bg-slate-700 border-indigo-500 text-white ring-1 ring-indigo-500`
                                         : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600'
@@ -164,7 +164,7 @@ export function TaskForm({ initialValues, availableTags, onSubmit, onCreateTag, 
                     <button
                         type="button"
                         onClick={() => setIsCreatingTag(!isCreatingTag)}
-                        className="flex items-center text-xs font-medium px-2.5 py-1.5 rounded-full bg-indigo-600/10 border border-indigo-500/30 text-indigo-400 hover:bg-indigo-600/20 transition-all"
+                        className="flex items-center text-[10px] font-medium px-2 py-1 rounded-full bg-indigo-600/10 border border-indigo-500/30 text-indigo-400 hover:bg-indigo-600/20 transition-all"
                     >
                         <Plus size={12} className="mr-1" /> New Tag
                     </button>
@@ -209,7 +209,7 @@ export function TaskForm({ initialValues, availableTags, onSubmit, onCreateTag, 
                     id="description"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white caret-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder:text-slate-600 min-h-[100px] resize-none"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white caret-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder:text-slate-600 min-h-[100px] resize-none"
                     placeholder="Add details..."
                 />
             </div>
@@ -221,9 +221,9 @@ export function TaskForm({ initialValues, availableTags, onSubmit, onCreateTag, 
                         checked={syncToGoogle}
                         onChange={(e) => setSyncToGoogle(e.target.checked)}
                         disabled={isAlreadySynced}
-                        className="form-checkbox h-4 w-4 text-indigo-500 rounded border-slate-700 bg-slate-800 transition-all group-hover:border-indigo-500/50 disabled:opacity-50"
+                        className="form-checkbox h-3.5 w-3.5 text-indigo-500 rounded border-slate-700 bg-slate-800 transition-all group-hover:border-indigo-500/50 disabled:opacity-50"
                     />
-                    <span className="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">
+                    <span className="text-xs text-slate-400 group-hover:text-slate-300 transition-colors">
                         {isAlreadySynced ? 'Synced with Google Tasks' : 'Sync to Google Tasks'}
                     </span>
                 </label>
@@ -233,13 +233,13 @@ export function TaskForm({ initialValues, availableTags, onSubmit, onCreateTag, 
                 <button
                     type="button"
                     onClick={onCancel}
-                    className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                    className="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
                 >
                     Cancel
                 </button>
                 <button
                     type="button"
-                    className="px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors shadow-lg shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-3 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors shadow-lg shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={handleSubmit}
                 >
                     {submitLabel}

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Minus, Activity, Sun, Moon, Coffee, Book, Dumbbell, Code, Music, Briefcase, Home, Star, Zap, Heart, MoreVertical, Leaf, Brain, BookOpen, Edit2 } from 'lucide-react';
+import { Check, Minus, Activity, Sun, Moon, Coffee, Book, Dumbbell, Code, Music, Briefcase, Home, Star, Zap, Heart, Leaf, Brain, BookOpen, Edit2 } from 'lucide-react';
 import type { Database } from '../../../types/supabase';
 
 // Re-using types from Database definition for strictness
@@ -87,7 +87,7 @@ export const HabitRow: React.FC<HabitRowProps> = ({ habit, log, onToggle, onEdit
         <div
             onClick={() => isEditMode && onEdit()}
             className={`
-                group flex items-center justify-between px-4 py-2 rounded-xl border shadow-sm transition-all duration-300
+                group flex items-center justify-between px-4 py-2.5 rounded-xl border shadow-sm transition-all duration-300
                 ${isEditMode
                     ? 'cursor-pointer bg-slate-800/40 border-amber-500/30 hover:bg-slate-800/80 hover:border-amber-500/60'
                     : 'bg-white/5 border-white/5 hover:border-white/10'
@@ -95,13 +95,13 @@ export const HabitRow: React.FC<HabitRowProps> = ({ habit, log, onToggle, onEdit
             `}
         >
             {/* Left Side: Info */}
-            <div className="flex items-center gap-4">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isEditMode ? 'bg-amber-500/10 text-amber-500' : 'bg-indigo-500/10 text-indigo-400'}`}>
-                    <IconComponent size={16} />
+            <div className="flex items-center gap-3">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${isEditMode ? 'bg-amber-500/10 text-amber-500' : 'bg-indigo-500/10 text-indigo-400'}`}>
+                    <IconComponent size={14} />
                 </div>
                 <div>
-                    <h3 className="font-bold text-white text-lg">{habit.title}</h3>
-                    <p className="text-sm text-slate-400 font-medium">
+                    <h3 className="font-medium text-white text-sm">{habit.title}</h3>
+                    <p className="text-[11px] text-slate-400 font-medium">
                         {formatTime(habit.default_time)}
                     </p>
                 </div>
@@ -117,7 +117,7 @@ export const HabitRow: React.FC<HabitRowProps> = ({ habit, log, onToggle, onEdit
                     <motion.button
                         whileTap={{ scale: 0.9 }}
                         onClick={handleNextState}
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-300 border ${currentStatus === 'completed'
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors duration-300 border ${currentStatus === 'completed'
                             ? 'bg-emerald-500 border-emerald-500 text-white'
                             : currentStatus === 'partial'
                                 ? 'bg-amber-400 border-amber-400 text-white'
@@ -132,7 +132,7 @@ export const HabitRow: React.FC<HabitRowProps> = ({ habit, log, onToggle, onEdit
                                     animate={{ scale: 1, rotate: 0 }}
                                     exit={{ scale: 0, rotate: 45 }}
                                 >
-                                    <Check size={16} className="stroke-[3]" />
+                                    <Check size={14} className="stroke-[3]" />
                                 </motion.div>
                             )}
                             {currentStatus === 'partial' && (
@@ -142,7 +142,7 @@ export const HabitRow: React.FC<HabitRowProps> = ({ habit, log, onToggle, onEdit
                                     animate={{ scale: 1 }}
                                     exit={{ scale: 0 }}
                                 >
-                                    <Minus size={16} className="stroke-[3]" />
+                                    <Minus size={14} className="stroke-[3]" />
                                 </motion.div>
                             )}
                         </AnimatePresence>

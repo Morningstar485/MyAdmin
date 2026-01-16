@@ -36,23 +36,21 @@ export function ConsistencyAnchor() {
                 // Note: filtering by workspace? Prompt implied "Health vs Output", usually global or work. 
                 // Let's assume 'work' or all. Prompt didn't specify workspace for this tile, but did for FocusTriad ("workspace == 'work'").
                 // I'll fetch ALL completed todos for "Output".
+                // 2. Fetch Tasks AND Patch Legacy Data (completed_at)
+
+                // B. Main Fetch: Get confirmed completed tasks
                 const { data: todos } = await supabase
                     .from('todos')
-                    .select('id, created_at, completed, status, updated_at') // timestamps are ISO
+                    .select('id, completed_at, created_at')
                     .eq('completed', true)
-                    .gte('updated_at', startDate.toISOString());
-                // Wait, completed_at is not reliable if we only use created_at. 
-                // Ideally we track when it was completed. If not tracked, we might proxy with updated_at (if status changed) or created_at (for short lived tasks).
-                // For now, I'll use `updated_at` as completion time proxy if available, or just count them by day they exist? 
-                // Actually, usually "Output" means tasks DONE that day. 
-                // I'll check if the schema has `completed_at`. If not, I will use `updated_at`. 
-                // Assuming standard supabase `updated_at` trigger exists.
+                    .or(`completed_at.gte.${startDate.toISOString()},created_at.gte.${startDate.toISOString()}`);
 
                 const todoMap = new Map<string, number>();
                 todos?.forEach((t: any) => {
-                    // Use updated_at for completion date approximation
-                    const date = t.updated_at ? t.updated_at.split('T')[0] : t.created_at.split('T')[0];
-                    todoMap.set(date, (todoMap.get(date) || 0) + 1);
+                    // Fallback to created_at if completed_at is missing (safe proxy for recent tasks)
+                    const dateObj = new Date(t.completed_at || t.created_at);
+                    const dateStr = format(dateObj, 'yyyy-MM-dd');
+                    todoMap.set(dateStr, (todoMap.get(dateStr) || 0) + 1);
                 });
 
                 // 3. Process Habits

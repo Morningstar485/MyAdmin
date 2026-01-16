@@ -48,7 +48,7 @@ export function TaskCard({ todo, onToggle, isEditing, onEdit, onClick, isCompact
             className={`
                 group relative border
                 transition-all duration-300 ease-out
-                ${isCompact ? 'p-2 rounded-lg' : 'p-3 rounded-lg'}
+                ${isCompact ? 'p-1.5 rounded-md' : 'p-2 rounded-lg'}
                 bg-slate-800/40 border-slate-700/50 hover:border-slate-600 hover:bg-slate-800/80 hover:shadow-xl hover:shadow-black/20
                 ${(isCompleted || isArchived) ? 'opacity-50 hover:opacity-100 grayscale-[0.5]' : ''}
                 ${isEditing ? `cursor-pointer border-solid hover:ring-2 ${hoverClass}` : ''}
@@ -74,7 +74,7 @@ export function TaskCard({ todo, onToggle, isEditing, onEdit, onClick, isCompact
                         }}
                         className={`
                             border flex items-center justify-center transition-all
-                            ${isCompact ? 'w-3.5 h-3.5 rounded-sm' : 'w-4 h-4 rounded-sm'}
+                            ${isCompact ? 'w-3 h-3 rounded-sm' : 'w-3.5 h-3.5 rounded-sm'}
                             ${isCompleted
                                 ? 'bg-indigo-500 border-indigo-500 text-white'
                                 : 'border-slate-500 hover:border-indigo-400 text-transparent'
@@ -88,7 +88,7 @@ export function TaskCard({ todo, onToggle, isEditing, onEdit, onClick, isCompact
                 {/* Left: Title */}
                 <h3 className={`
                     font-medium text-slate-200 leading-snug truncate flex-1
-                    ${isCompact ? 'text-sm' : 'text-sm'}
+                    text-xs
                     ${isCompleted ? 'line-through decoration-slate-600' : ''}
                 `}>
                     {todo.title}
@@ -107,15 +107,15 @@ export function TaskCard({ todo, onToggle, isEditing, onEdit, onClick, isCompact
                     {/* Icons: Edit | Google Sync | Clock */}
                     <div className="flex items-center gap-1">
                         {isEditing ? (
-                            <div className="w-5 h-5 bg-yellow-500/20 rounded text-yellow-500 flex items-center justify-center border border-yellow-500/30" title="Edit Mode">
+                            <div className="w-4 h-4 bg-yellow-500/20 rounded text-yellow-500 flex items-center justify-center border border-yellow-500/30" title="Edit Mode">
                                 <Edit2 size={12} strokeWidth={2.5} />
                             </div>
                         ) : todo.google_task_id ? (
-                            <div className="w-5 h-5 bg-blue-500/20 rounded text-blue-400 flex items-center justify-center border border-blue-500/30" title="Synced with Google Tasks">
+                            <div className="w-4 h-4 bg-blue-500/20 rounded text-blue-400 flex items-center justify-center border border-blue-500/30" title="Synced with Google Tasks">
                                 <Share2 size={12} strokeWidth={2.5} />
                             </div>
                         ) : (
-                            <div className="w-5 h-5 bg-[#2C2C2E] rounded text-blue-400 flex items-center justify-center border border-[#3A3A3C]" title="Due Time">
+                            <div className="w-4 h-4 bg-[#2C2C2E] rounded text-blue-400 flex items-center justify-center border border-[#3A3A3C]" title="Due Time">
                                 <Clock size={12} strokeWidth={2.5} />
                             </div>
                         )}

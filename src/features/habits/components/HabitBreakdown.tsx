@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { Habit, HabitLog } from '../../../services/habitService';
-import { TrendingUp, TrendingDown, Minus, Flame, Trophy, Activity, Zap, BookOpen, Moon, Sun, Code, Dumbbell, Leaf, Brain, Book, Coffee, Home, Heart, Music, Star, Briefcase } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Flame, Activity, Zap, BookOpen, Moon, Sun, Code, Dumbbell, Leaf, Brain, Book, Coffee, Home, Heart, Music, Star, Briefcase } from 'lucide-react';
 
 interface HabitBreakdownProps {
     habits: Habit[];
@@ -119,8 +119,8 @@ export function HabitBreakdown({ habits, logs }: HabitBreakdownProps) {
 
     return (
         <div className="bg-slate-900 rounded-2xl border border-white/5 flex flex-col overflow-hidden flex-grow shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)]">
-            <div className="p-6 border-b border-slate-800/50 flex items-center justify-between bg-slate-900/50 backdrop-blur-sm">
-                <h3 className="text-lg font-semibold text-white">Habit Performance</h3>
+            <div className="p-4 border-b border-slate-800/50 flex items-center justify-between bg-slate-900/50 backdrop-blur-sm">
+                <h3 className="text-sm font-semibold text-white">Habit Performance</h3>
                 <div className="px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs font-medium text-slate-400">
                     Last 30 Days
                 </div>
@@ -130,10 +130,10 @@ export function HabitBreakdown({ habits, logs }: HabitBreakdownProps) {
                 <table className="w-full text-left border-collapse">
                     <thead className="bg-slate-950/30 sticky top-0 z-10 backdrop-blur-md">
                         <tr>
-                            <th className="p-4 pl-6 text-xs font-bold text-slate-500 uppercase tracking-wider">Habit</th>
-                            <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Success</th>
-                            <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Streak</th>
-                            <th className="p-4 pr-6 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Trend</th>
+                            <th className="p-2 pl-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Habit</th>
+                            <th className="p-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">Success</th>
+                            <th className="p-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">Streak</th>
+                            <th className="p-2 pr-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Trend</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/50">
@@ -142,15 +142,15 @@ export function HabitBreakdown({ habits, logs }: HabitBreakdownProps) {
 
                             return (
                                 <tr key={habit.id} className="group hover:bg-slate-800/30 transition-colors">
-                                    <td className="p-4 pl-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-indigo-500/10 group-hover:text-indigo-400 transition-colors">
-                                                <Icon size={16} />
+                                    <td className="p-2 pl-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-indigo-500/10 group-hover:text-indigo-400 transition-colors">
+                                                <Icon size={14} />
                                             </div>
                                             <span className="font-medium text-sm text-slate-200">{habit.title}</span>
                                         </div>
                                     </td>
-                                    <td className="p-4 text-center">
+                                    <td className="p-2 text-center">
                                         <div className="flex flex-col gap-1 items-center">
                                             <span className={`text-sm font-bold ${habit.successRate >= 80 ? 'text-emerald-400' : habit.successRate >= 50 ? 'text-amber-400' : 'text-slate-500'}`}>
                                                 {habit.successRate}%
@@ -163,7 +163,7 @@ export function HabitBreakdown({ habits, logs }: HabitBreakdownProps) {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="p-4 text-center">
+                                    <td className="p-2 text-center">
                                         <div className="flex items-center justify-center gap-1.5">
                                             <div className={`p-1 rounded-md ${habit.streak > 3 ? 'bg-orange-500/10 text-orange-500' : 'text-slate-500'}`}>
                                                 <Flame size={14} className={habit.streak > 3 ? 'fill-orange-500' : ''} />
@@ -173,7 +173,7 @@ export function HabitBreakdown({ habits, logs }: HabitBreakdownProps) {
                                             </span>
                                         </div>
                                     </td>
-                                    <td className="p-4 pr-6 text-right">
+                                    <td className="p-2 pr-4 text-right">
                                         <div className="flex justify-end">
                                             {habit.trend === 'up' && (
                                                 <div className="flex items-center gap-1 text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-md text-xs font-bold">

@@ -36,11 +36,11 @@ export function VelocityChart({ logs, totalHabitsCount }: VelocityChartProps) {
     if (totalHabitsCount === 0) return null;
 
     return (
-        <div className="bg-slate-900 rounded-2xl p-6 border border-white/5 h-80 flex flex-col relative overflow-hidden group">
+        <div className="bg-slate-900 rounded-2xl p-4 border border-white/5 h-48 flex flex-col relative overflow-hidden group">
             {/* Gradient Overlay for fanciness */}
             <div className="absolute top-0 right-0 p-32 bg-emerald-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
 
-            <h3 className="text-lg font-semibold mb-6 text-white z-10">30-Day Velocity</h3>
+            <h3 className="text-sm font-semibold mb-2 text-white z-10">30-Day Velocity</h3>
 
             <div className="flex-1 w-full min-h-0 z-10">
                 <ResponsiveContainer width="100%" height="100%">

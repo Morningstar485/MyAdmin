@@ -32,22 +32,22 @@ export function ConsistencyHeatmap({ logs, totalHabitsCount }: ConsistencyHeatma
     };
 
     return (
-        <div className="bg-slate-900 rounded-2xl p-6 border border-white/5">
-            <h3 className="text-lg font-semibold mb-4 text-white">Consistency Grid</h3>
-            <div className="flex flex-wrap gap-2">
+        <div className="bg-slate-900 rounded-2xl p-4 border border-white/5">
+            <h3 className="text-sm font-semibold mb-3 text-white">Consistency Grid</h3>
+            <div className="flex flex-wrap gap-1">
                 {days.map((day) => (
                     <div
                         key={day.date}
-                        className="w-8 h-8 rounded-md transition-colors duration-300 border border-white/5"
+                        className="w-3.5 h-3.5 rounded-sm transition-colors duration-300 border border-white/5"
                         style={getIntensityStyle(day.date)}
                         title={`Date: ${day.date}`}
                     />
                 ))}
             </div>
 
-            <div className="flex items-center justify-between mt-4 text-xs text-slate-400">
+            <div className="flex items-center justify-between mt-4 text-[10px] text-slate-400">
                 <span>Less</span>
-                <div className="h-2 w-32 rounded-full bg-gradient-to-r from-slate-800 via-emerald-500/50 to-emerald-500 mx-3" />
+                <div className="h-1.5 w-24 rounded-full bg-gradient-to-r from-slate-800 via-emerald-500/50 to-emerald-500 mx-3" />
                 <span>More</span>
             </div>
         </div>

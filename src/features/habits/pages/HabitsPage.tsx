@@ -176,10 +176,10 @@ export default function HabitsPage() {
             {/* LEFT PANEL: INPUT ZONE */}
             <div className="w-[35%] bg-slate-900 border-r border-slate-800 flex flex-col overflow-y-auto">
                 {/* Header */}
-                <div className="sticky top-0 z-10 bg-slate-900/80 backdrop-blur-md p-6 border-b border-slate-800 flex items-center justify-between">
+                <div className="sticky top-0 z-10 bg-slate-900/80 backdrop-blur-md px-6 py-4 border-b border-slate-800 flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-white tracking-tight">Daily Protocol</h1>
-                        <p className="text-emerald-400 font-medium mt-1">
+                        <p className="text-emerald-400 font-medium text-sm mt-0.5">
                             {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </p>
                     </div>
@@ -187,21 +187,21 @@ export default function HabitsPage() {
                         <button
                             onClick={() => setIsEditMode(!isEditMode)}
                             className={`
-                                px-3 py-2 rounded-xl text-sm font-medium transition-all shadow-lg flex items-center gap-2
+                                h-8 px-3 rounded-lg text-xs font-medium transition-all shadow-lg flex items-center gap-1.5
                                 ${isEditMode
                                     ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-orange-500/20'
                                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                                 }
                             `}
                         >
-                            {isEditMode ? <X size={16} /> : <Edit2 size={16} />}
+                            {isEditMode ? <X size={14} /> : <Edit2 size={14} />}
                             {isEditMode ? 'Done' : 'Edit'}
                         </button>
                         <button
                             onClick={handleCreate}
-                            className="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-colors"
+                            className="h-8 w-8 flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors"
                         >
-                            <Plus size={20} />
+                            <Plus size={16} />
                         </button>
                     </div>
                 </div>
@@ -210,7 +210,7 @@ export default function HabitsPage() {
                 <div className="pb-10">
                     {groupedHabits.morning.length > 0 && (
                         <div className="mb-2">
-                            <div className="text-xs font-bold tracking-wider text-slate-400 mb-4 mt-8 px-6 uppercase">Morning Routine</div>
+                            <div className="text-[10px] font-bold tracking-wider text-slate-400 mb-2 mt-6 px-6 uppercase">Morning Routine</div>
                             <div className="px-6 space-y-3">
                                 {groupedHabits.morning.map(habit => (
                                     <HabitRow
@@ -228,7 +228,7 @@ export default function HabitsPage() {
 
                     {groupedHabits.afternoon.length > 0 && (
                         <div className="mb-2">
-                            <div className="text-xs font-bold tracking-wider text-slate-400 mb-4 mt-8 px-6 uppercase">Afternoon Protocol</div>
+                            <div className="text-[10px] font-bold tracking-wider text-slate-400 mb-2 mt-6 px-6 uppercase">Afternoon Protocol</div>
                             <div className="px-6 space-y-3">
                                 {groupedHabits.afternoon.map(habit => (
                                     <HabitRow
@@ -246,7 +246,7 @@ export default function HabitsPage() {
 
                     {groupedHabits.evening.length > 0 && (
                         <div className="mb-2">
-                            <div className="text-xs font-bold tracking-wider text-slate-400 mb-4 mt-8 px-6 uppercase">Evening Routine</div>
+                            <div className="text-[10px] font-bold tracking-wider text-slate-400 mb-2 mt-6 px-6 uppercase">Evening Routine</div>
                             <div className="px-6 space-y-3">
                                 {groupedHabits.evening.map(habit => (
                                     <HabitRow
@@ -271,41 +271,41 @@ export default function HabitsPage() {
             </div>
 
             {/* RIGHT PANEL: ANALYTICS */}
-            <div className="flex-1 bg-slate-950 p-8 overflow-y-auto custom-scrollbar">
-                <div className="max-w-4xl mx-auto flex flex-col gap-6 h-full">
+            <div className="flex-1 bg-slate-950 p-6 overflow-y-auto custom-scrollbar">
+                <div className="max-w-4xl mx-auto flex flex-col gap-5 h-full">
 
                     {/* Heatmap */}
                     <ConsistencyHeatmap logs={recentLogs} totalHabitsCount={habits.length} />
 
                     {/* Stats Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 shrink-0">
-                        <div className="bg-slate-900 p-6 rounded-2xl border border-white/5 shadow-sm flex items-center gap-4">
-                            <div className="p-3 bg-indigo-500/10 rounded-xl text-indigo-400">
-                                <PieChart size={24} />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 shrink-0">
+                        <div className="bg-slate-900 p-3 rounded-2xl border border-white/5 shadow-sm flex items-center gap-3">
+                            <div className="p-2 bg-indigo-500/10 rounded-xl text-indigo-400">
+                                <PieChart size={20} />
                             </div>
                             <div>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Completion</p>
-                                <p className="text-2xl font-bold text-white">{stats.completionRate}%</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Completion</p>
+                                <p className="text-xl font-bold text-white">{stats.completionRate}%</p>
                             </div>
                         </div>
 
-                        <div className="bg-slate-900 p-6 rounded-2xl border border-white/5 shadow-sm flex items-center gap-4">
-                            <div className="p-3 bg-orange-500/10 rounded-xl text-orange-400">
-                                <Flame size={24} />
+                        <div className="bg-slate-900 p-3 rounded-2xl border border-white/5 shadow-sm flex items-center gap-3">
+                            <div className="p-2 bg-orange-500/10 rounded-xl text-orange-400">
+                                <Flame size={20} />
                             </div>
                             <div>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Current Streak</p>
-                                <p className="text-2xl font-bold text-white">{stats.streak} Days</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Current Streak</p>
+                                <p className="text-xl font-bold text-white">{stats.streak} Days</p>
                             </div>
                         </div>
 
-                        <div className="bg-slate-900 p-6 rounded-2xl border border-white/5 shadow-sm flex items-center gap-4">
-                            <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400">
-                                <Trophy size={24} />
+                        <div className="bg-slate-900 p-3 rounded-2xl border border-white/5 shadow-sm flex items-center gap-3">
+                            <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-400">
+                                <Trophy size={20} />
                             </div>
                             <div>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Perfect Days</p>
-                                <p className="text-2xl font-bold text-white">{stats.perfectDays}</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Perfect Days</p>
+                                <p className="text-xl font-bold text-white">{stats.perfectDays}</p>
                             </div>
                         </div>
                     </div>

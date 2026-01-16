@@ -57,7 +57,10 @@ export function FocusTriad() {
         // API
         await supabase
             .from('todos')
-            .update({ completed: true })
+            .update({ 
+                completed: true,
+                updated_at: new Date().toISOString()
+            })
             .eq('id', id);
 
         // Optional: Refetch to fill the slot? 

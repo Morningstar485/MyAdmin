@@ -66,9 +66,34 @@ export function useTodos() {
 
     const updateTodo = async (id: string, updates: Partial<Todo>) => {
         try {
+            // Logic to handle completed_at timestamp
+            const payload: any = {
+                ...updates
+                // updated_at removed
+            };
+
+            // Handle boolean toggle
+            if (updates.completed !== undefined) {
+                payload.completed_at = updates.completed ? new Date().toISOString() : null;
+            }
+
+            // Handle status change (Kanban)
+            if (updates.status !== undefined) {
+                if (updates.status === 'Done' || updates.status === 'Completed') {
+                    payload.completed_at = new Date().toISOString();
+                    payload.completed = true;
+                } else if (updates.status !== 'Done' && updates.status !== 'Completed') {
+                    // Only auto-uncheck if not explicitly managed in same update
+                    if (updates.completed === undefined) {
+                        payload.completed_at = null;
+                        payload.completed = false;
+                    }
+                }
+            }
+
             const { error } = await supabase
                 .from('todos')
-                .update(updates)
+                .update(payload)
                 .eq('id', id);
 
             if (error) throw error;
@@ -99,6 +124,7 @@ export function useTodos() {
                 id: todo.id,
                 order: index,
                 status: todo.status
+                // updated_at removed
             }));
 
             const { error } = await supabase

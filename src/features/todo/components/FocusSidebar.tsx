@@ -78,14 +78,14 @@ function PomodoroTimer() {
                 <div className="flex bg-slate-800/80 rounded-lg p-1">
                     <button
                         onClick={() => switchMode('focus')}
-                        className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide transition-all ${mode === 'focus' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide transition-all ${mode === 'focus' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'
                             }`}
                     >
                         Focus
                     </button>
                     <button
                         onClick={() => switchMode('break')}
-                        className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide transition-all ${mode === 'break' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide transition-all ${mode === 'break' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'
                             }`}
                     >
                         Break
@@ -114,7 +114,7 @@ function PomodoroTimer() {
                                 type="number"
                                 value={focusTime}
                                 onChange={(e) => setFocusTime(Number(e.target.value))}
-                                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm text-white outline-none focus:border-indigo-500"
+                                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white outline-none focus:border-indigo-500"
                             />
                         </div>
                         <div>
@@ -123,7 +123,7 @@ function PomodoroTimer() {
                                 type="number"
                                 value={breakTime}
                                 onChange={(e) => setBreakTime(Number(e.target.value))}
-                                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm text-white outline-none focus:border-emerald-500"
+                                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white outline-none focus:border-emerald-500"
                             />
                         </div>
                         <button
@@ -139,7 +139,7 @@ function PomodoroTimer() {
             {/* Timer Display */}
             <div className="relative mb-4">
                 {/* Circular Progress (Smaller SVG) */}
-                <svg className="w-28 h-28 transform -rotate-90">
+                <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 112 112">
                     <circle
                         cx="56"
                         cy="56"
@@ -237,7 +237,7 @@ function QuickCalendarAdd() {
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         placeholder="e.g. Team Sync"
-                        className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-600 transition-all outline-none"
+                        className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-3 py-1.5 text-xs text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-600 transition-all outline-none"
                         required
                     />
                 </div>
@@ -248,7 +248,7 @@ function QuickCalendarAdd() {
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder="Add details..."
-                        className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-600 transition-all outline-none resize-none h-14"
+                        className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-3 py-1.5 text-xs text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-600 transition-all outline-none resize-none h-14"
                     />
                 </div>
 
@@ -258,7 +258,7 @@ function QuickCalendarAdd() {
                         type="datetime-local"
                         value={startTime}
                         onChange={(e) => setStartTime(e.target.value)}
-                        className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all outline-none [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-50"
+                        className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-3 py-1.5 text-xs text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all outline-none [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-50"
                         required
                     />
                 </div>
@@ -271,7 +271,7 @@ function QuickCalendarAdd() {
                             type="number"
                             value={duration}
                             onChange={(e) => setDuration(Number(e.target.value))}
-                            className="bg-transparent text-sm text-white w-full outline-none"
+                            className="bg-transparent text-xs text-white w-full outline-none"
                             min="5"
                             step="5"
                         />
