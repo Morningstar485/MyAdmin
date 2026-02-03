@@ -1,4 +1,4 @@
-import { StickyNote, Network } from 'lucide-react';
+import { StickyNote, Network, Trash2 } from 'lucide-react';
 import { type Plan } from '../../todo/types';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
@@ -20,7 +20,8 @@ export function PlanCard({
     completedCount,
     noteCount,
     hasMindMap,
-    isEditing
+    isEditing,
+    onDelete
 }: PlanCardProps) {
     // Data for the donut chart
     const remainingCount = Math.max(0, taskCount - completedCount);
@@ -100,9 +101,22 @@ export function PlanCard({
 
             {/* RIGHT COLUMN: Metrics (Approx 35%) */}
             <div className="w-[35%] h-full p-2 flex flex-col items-center justify-center relative z-10 bg-slate-800/10">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest absolute top-5 right-5">
-                    {Math.round((completedCount / (taskCount || 1)) * 100)}%
-                </span>
+                {isEditing ? (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete?.();
+                        }}
+                        className="absolute top-4 right-4 p-2 bg-red-500/20 text-red-500 border border-red-500/30 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-lg z-50 hover:scale-110 active:scale-95"
+                        title="Delete Plan"
+                    >
+                        <Trash2 size={18} strokeWidth={2.5} />
+                    </button>
+                ) : (
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest absolute top-5 right-5">
+                        {Math.round((completedCount / (taskCount || 1)) * 100)}%
+                    </span>
+                )}
 
                 <div className="relative w-24 h-24 mt-4">
                     <ResponsiveContainer width="100%" height="100%">

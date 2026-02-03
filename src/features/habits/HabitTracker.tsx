@@ -153,6 +153,7 @@ export default function HabitTracker() {
                                 habit={habit}
                                 log={log}
                                 onToggle={handleToggle}
+                                onEdit={() => { }}
                             />
                         );
                     })

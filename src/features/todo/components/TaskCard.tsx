@@ -1,16 +1,17 @@
 import type { Todo } from '../types';
-import { Clock, Check, Edit2, Share2 } from 'lucide-react';
+import { Clock, Check, Share2, Trash2 } from 'lucide-react';
 
 interface TaskCardProps {
     todo: Todo;
     onToggle: (id: string) => void;
     isEditing?: boolean;
     onEdit?: (todo: Todo) => void;
+    onDelete?: (id: string) => void;
     onClick?: (todo: Todo) => void;
     isCompact?: boolean;
 }
 
-export function TaskCard({ todo, onToggle, isEditing, onEdit, onClick, isCompact = false }: TaskCardProps) {
+export function TaskCard({ todo, onToggle, isEditing, onEdit, onDelete, onClick, isCompact = false }: TaskCardProps) {
     const isCompleted = todo.completed;
 
     // Deadline Visuals
@@ -104,20 +105,31 @@ export function TaskCard({ todo, onToggle, isEditing, onEdit, onClick, isCompact
                         </span>
                     )}
 
-                    {/* Icons: Edit | Google Sync | Clock */}
+                    {/* Icons: Edit | Google Sync | Clock | Delete */}
                     <div className="flex items-center gap-1">
                         {isEditing ? (
-                            <div className="w-4 h-4 bg-yellow-500/20 rounded text-yellow-500 flex items-center justify-center border border-yellow-500/30" title="Edit Mode">
-                                <Edit2 size={12} strokeWidth={2.5} />
-                            </div>
-                        ) : todo.google_task_id ? (
-                            <div className="w-4 h-4 bg-blue-500/20 rounded text-blue-400 flex items-center justify-center border border-blue-500/30" title="Synced with Google Tasks">
-                                <Share2 size={12} strokeWidth={2.5} />
-                            </div>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDelete?.(todo.id);
+                                }}
+                                className="w-4 h-4 bg-red-500/20 rounded text-red-500 flex items-center justify-center border border-red-500/30 hover:bg-red-500 hover:text-white transition-colors"
+                                title="Delete Task"
+                            >
+                                <Trash2 size={12} strokeWidth={2.5} />
+                            </button>
                         ) : (
-                            <div className="w-4 h-4 bg-[#2C2C2E] rounded text-blue-400 flex items-center justify-center border border-[#3A3A3C]" title="Due Time">
-                                <Clock size={12} strokeWidth={2.5} />
-                            </div>
+                            <>
+                                {todo.google_task_id ? (
+                                    <div className="w-4 h-4 bg-blue-500/20 rounded text-blue-400 flex items-center justify-center border border-blue-500/30" title="Synced with Google Tasks">
+                                        <Share2 size={12} strokeWidth={2.5} />
+                                    </div>
+                                ) : (
+                                    <div className="w-4 h-4 bg-[#2C2C2E] rounded text-blue-400 flex items-center justify-center border border-[#3A3A3C]" title="Due Time">
+                                        <Clock size={12} strokeWidth={2.5} />
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

@@ -5,7 +5,11 @@ import { ProjectWatch } from './components/ProjectWatch';
 import { QuickCapture } from './components/QuickCapture';
 import { TaskTagsDistribution } from './components/TaskTagsDistribution';
 
-export function Dashboard() {
+interface DashboardProps {
+    workspace?: string;
+}
+
+export function Dashboard({ workspace }: DashboardProps) {
     const today = new Date();
 
     return (
@@ -15,7 +19,9 @@ export function Dashboard() {
                 {/* Header */}
                 <header className="flex items-end justify-between pb-2 border-b border-slate-800">
                     <div>
-                        <h1 className="text-3xl font-bold text-white tracking-tight">My Dashboard</h1>
+                        <h1 className="text-3xl font-bold text-white tracking-tight">
+                            My Dashboard {workspace && <span className="text-slate-500 text-lg font-medium">/ {workspace}</span>}
+                        </h1>
                         <p className="text-slate-400 mt-1 font-medium">
                             {format(today, 'EEEE, MMMM do, yyyy')}
                         </p>

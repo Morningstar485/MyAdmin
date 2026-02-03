@@ -127,21 +127,6 @@ export function useFileSystem(workspaceProp: string | null = null, initialFolder
         }
     };
 
-    const moveNote = async (noteId: string, targetFolderId: string | null) => {
-        try {
-            const { error } = await supabase
-                .from('notes')
-                .update({ folder_id: targetFolderId })
-                .eq('id', noteId);
-
-            if (error) throw error;
-            fetchDirectory(currentFolderId); // Refresh to remove moved note
-        } catch (err: any) {
-            console.error('Error moving note:', err);
-            alert('Failed to move note');
-        }
-    };
-
     return {
         currentFolderId,
         folders,
@@ -153,7 +138,6 @@ export function useFileSystem(workspaceProp: string | null = null, initialFolder
         error,
         navigateTo,
         createFolder,
-        moveNote,
         refresh: () => fetchDirectory(currentFolderId)
     };
 }
