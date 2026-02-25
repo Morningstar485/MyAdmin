@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useWorkspace, type WorkspaceType } from '../contexts/WorkspaceContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlobalTimerStrip } from '../components/GlobalTimerStrip';
+import { PwaInstallPrompt } from '../components/PwaInstallPrompt';
 import logo from '../assets/logo.png';
 
 export type View = 'tasks' | 'notes' | 'dashboard' | 'settings' | 'planner' | 'library' | 'roadmap' | 'habits';
@@ -252,6 +253,9 @@ export function AppShell({ children }: AppShellProps) {
 
                 {/* Global Timer Strip */}
                 <GlobalTimerStrip />
+
+                {/* PWA Install Prompt */}
+                <PwaInstallPrompt />
             </main>
         </div>
     );
