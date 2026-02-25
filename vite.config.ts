@@ -1,12 +1,38 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
+  const base = env.GITHUB_ACTIONS || env.VERCEL_GITHUB_DEPLOYMENT ? '/MyAdmin/' : '/';
+
   return {
-    plugins: [react()],
-    base: env.GITHUB_ACTIONS || env.VERCEL_GITHUB_DEPLOYMENT ? '/MyAdmin/' : '/',
+    plugins: [
+      react(),
+      VitePWA({
+        registerType: 'autoUpdate',
+        includeAssets: ['favicon.png'],
+        manifest: {
+          name: 'MyAdmin Dashboard',
+          short_name: 'MyAdmin',
+          description: 'Personal productivity and task management dashboard',
+          theme_color: '#0f172a',
+          background_color: '#0f172a',
+          display: 'standalone',
+          start_url: base,
+          icons: [
+            {
+              src: 'favicon.png',
+              sizes: '192x192 512x512',
+              type: 'image/png',
+              purpose: 'any maskable'
+            }
+          ]
+        }
+      })
+    ],
+    base: base,
     build: {
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
