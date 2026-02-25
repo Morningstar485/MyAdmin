@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, CheckSquare, FileText, Settings, Menu, LogOut, GraduationCap, Briefcase, BookOpen, ChevronDown, Map, CalendarSync, NotebookTabs } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useWorkspace, type WorkspaceType } from '../contexts/WorkspaceContext';
@@ -9,11 +10,9 @@ export type View = 'tasks' | 'notes' | 'dashboard' | 'settings' | 'planner' | 'l
 
 interface AppShellProps {
     children: React.ReactNode;
-    currentView: View;
-    onNavigate: (view: View) => void;
 }
 
-export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
+export function AppShell({ children }: AppShellProps) {
     const [isMobileOpen, setIsMobileOpen] = useState(false); // Mobile Drawer
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -33,8 +32,8 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
     const primaryBg = `bg-${theme.primary}-600`;
     const primaryShadow = `shadow-${theme.primary}-500/20`;
 
-    // Explicit Active Class builder
-    const getActiveClass = (active: boolean) => active
+    // Active Style builder
+    const getActiveStyles = (isActive: boolean) => isActive
         ? `${primaryBg} text-white shadow-lg ${primaryShadow}`
         : `text-slate-400 hover:bg-slate-800 hover:text-white`;
 
@@ -165,57 +164,57 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                     <NavItem
                         icon={<LayoutDashboard size={20} />}
                         label="Dashboard"
-                        active={currentView === 'dashboard'}
-                        onClick={() => { onNavigate('dashboard'); setIsMobileOpen(false); }}
-                        activeClass={getActiveClass(currentView === 'dashboard')}
+                        to="/dashboard"
+                        onClick={() => setIsMobileOpen(false)}
+                        activeStyles={getActiveStyles}
                     />
                     {workspace !== 'learning' ? (
                         <>
                             <NavItem
                                 icon={<NotebookTabs size={20} />}
                                 label="Planner"
-                                active={currentView === 'planner'}
-                                onClick={() => { onNavigate('planner'); setIsMobileOpen(false); }}
-                                activeClass={getActiveClass(currentView === 'planner')}
+                                to="/planner"
+                                onClick={() => setIsMobileOpen(false)}
+                                activeStyles={getActiveStyles}
                             />
                             <NavItem
                                 icon={<CheckSquare size={20} />}
                                 label="Tasks"
-                                active={currentView === 'tasks'}
-                                onClick={() => { onNavigate('tasks'); setIsMobileOpen(false); }}
-                                activeClass={getActiveClass(currentView === 'tasks')}
+                                to="/tasks"
+                                onClick={() => setIsMobileOpen(false)}
+                                activeStyles={getActiveStyles}
                             />
                             <NavItem
                                 icon={<CalendarSync size={20} />}
                                 label="Habits"
-                                active={currentView === 'habits'}
-                                onClick={() => { onNavigate('habits'); setIsMobileOpen(false); }}
-                                activeClass={getActiveClass(currentView === 'habits')}
+                                to="/habits"
+                                onClick={() => setIsMobileOpen(false)}
+                                activeStyles={getActiveStyles}
                             />
                         </>
                     ) : (
                         <NavItem
                             icon={<Map size={20} />}
                             label="Roadmaps"
-                            active={currentView === 'roadmap'}
-                            onClick={() => { onNavigate('roadmap'); setIsMobileOpen(false); }}
-                            activeClass={getActiveClass(currentView === 'roadmap')}
+                            to="/roadmap"
+                            onClick={() => setIsMobileOpen(false)}
+                            activeStyles={getActiveStyles}
                         />
                     )}
                     <NavItem
                         icon={<FileText size={20} />}
                         label="Notes"
-                        active={currentView === 'notes'}
-                        onClick={() => { onNavigate('notes'); setIsMobileOpen(false); }}
-                        activeClass={getActiveClass(currentView === 'notes')}
+                        to="/notes"
+                        onClick={() => setIsMobileOpen(false)}
+                        activeStyles={getActiveStyles}
                     />
                     {workspace === 'learning' && (
                         <NavItem
                             icon={<BookOpen size={20} />}
                             label="Library"
-                            active={currentView === 'library'}
-                            onClick={() => { onNavigate('library'); setIsMobileOpen(false); }}
-                            activeClass={getActiveClass(currentView === 'library')}
+                            to="/library"
+                            onClick={() => setIsMobileOpen(false)}
+                            activeStyles={getActiveStyles}
                         />
                     )}
                 </nav>
@@ -224,14 +223,15 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                     <NavItem
                         icon={<Settings size={20} />}
                         label="Settings"
-                        active={currentView === 'settings'}
-                        onClick={() => { onNavigate('settings'); setIsMobileOpen(false); }}
-                        activeClass={getActiveClass(currentView === 'settings')}
+                        to="/settings"
+                        onClick={() => setIsMobileOpen(false)}
+                        activeStyles={getActiveStyles}
                     />
                     <div className="h-px bg-slate-800 mx-1 my-2" />
                     <NavItem
                         icon={<LogOut size={20} />}
                         label="Sign Out"
+                        to="#"
                         onClick={async () => {
                             try {
                                 await supabase.auth.signOut();
@@ -242,7 +242,7 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                                 window.location.href = import.meta.env.BASE_URL;
                             }
                         }}
-                        activeClass="text-slate-400 hover:bg-slate-800 hover:text-white"
+                        activeStyles={() => "text-slate-400 hover:bg-slate-800 hover:text-white"}
                     />
                 </div>
             </aside>
@@ -258,13 +258,14 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
     );
 }
 
-function NavItem({ icon, label, onClick, activeClass }: { icon: React.ReactNode, label: string, active?: boolean, onClick?: () => void, activeClass: string }) {
+function NavItem({ icon, label, to, onClick, activeStyles }: { icon: React.ReactNode, label: string, to: string, onClick?: () => void, activeStyles: (isActive: boolean) => string }) {
     return (
-        <button
+        <NavLink
+            to={to}
             onClick={onClick}
-            className={`
+            className={({ isActive }) => `
                 w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group
-                ${activeClass}
+                ${activeStyles(isActive)}
                 justify-start
             `}
         >
@@ -274,6 +275,7 @@ function NavItem({ icon, label, onClick, activeClass }: { icon: React.ReactNode,
             <span className={`ml-3 text-sm font-medium overflow-hidden whitespace-nowrap transition-all duration-300 w-auto opacity-100`}>
                 {label}
             </span>
-        </button>
+        </NavLink>
     )
 }
+
