@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useWorkspace, type WorkspaceType } from '../contexts/WorkspaceContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlobalTimerStrip } from '../components/GlobalTimerStrip';
+import logo from '../assets/logo.png';
 
 export type View = 'tasks' | 'notes' | 'dashboard' | 'settings' | 'planner' | 'library' | 'roadmap' | 'habits';
 
@@ -54,10 +55,8 @@ export function AppShell({ children }: AppShellProps) {
                 </button>
                 <div className="flex-1 flex justify-center px-4">
                     <div className="flex items-center gap-2 bg-slate-950/50 px-3 py-1.5 rounded-xl border border-white/5">
-                        <div className={`w-6 h-6 ${primaryBg} rounded-md flex items-center justify-center`}>
-                            {theme.icon}
-                        </div>
-                        <span className="text-sm font-bold text-white">{theme.label}</span>
+                        <img src={logo} alt="MyAdmin" className="w-6 h-6 object-contain" />
+                        <span className="text-sm font-bold text-white uppercase tracking-wider">{theme.label}</span>
                     </div>
                 </div>
                 <div className="w-10" /> {/* Spacer for balance */}
@@ -91,11 +90,11 @@ export function AppShell({ children }: AppShellProps) {
                 </button>
 
                 {/* LOGO & BRAND */}
-                <div className="px-6 mb-8 flex items-center gap-3 transition-all duration-300">
-                    <div className={`w-10 h-10 ${primaryBg} rounded-xl flex items-center justify-center font-bold text-xl shadow-lg shrink-0 transition-colors duration-300`}>
-                        M
+                <div className="px-6 mb-8 flex items-center gap-4 transition-all duration-300">
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg shrink-0 transition-colors duration-300 bg-slate-950/50 border border-white/5 p-2 overflow-hidden">
+                        <img src={logo} alt="MyAdmin" className="w-full h-full object-contain" />
                     </div>
-                    <span className="font-bold text-xl tracking-tight text-white overflow-hidden whitespace-nowrap">
+                    <span className="font-bold text-2xl tracking-tight text-white overflow-hidden whitespace-nowrap">
                         MyAdmin
                     </span>
                 </div>
@@ -263,7 +262,7 @@ function NavItem({ icon, label, to, onClick, activeStyles }: { icon: React.React
         <NavLink
             to={to}
             onClick={onClick}
-            className={({ isActive }) => `
+            className={({ isActive }: { isActive: boolean }) => `
                 w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group
                 ${activeStyles(isActive)}
                 justify-start
@@ -278,4 +277,3 @@ function NavItem({ icon, label, to, onClick, activeStyles }: { icon: React.React
         </NavLink>
     )
 }
-

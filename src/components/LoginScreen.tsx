@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { LogIn } from 'lucide-react';
+import logo from '../assets/logo.png';
 
 export function LoginScreen() {
     const handleLogin = async () => {
@@ -24,8 +24,8 @@ export function LoginScreen() {
 
             {/* Card */}
             <div className="relative z-10 w-full max-w-sm rounded-3xl p-8 backdrop-blur-xl bg-slate-900/60 border border-white/10 shadow-2xl flex flex-col items-center">
-                <div className="mb-8 p-4 rounded-2xl bg-indigo-500/10 text-indigo-400">
-                    <LogIn size={40} />
+                <div className="mb-8 p-1 rounded-2xl bg-indigo-500/10 border border-white/5 shadow-xl overflow-hidden grayscale-[0.2] hover:grayscale-0 transition-all duration-500">
+                    <img src={logo} alt="MyAdmin" className="w-20 h-20 object-contain" />
                 </div>
 
                 <h1 className="text-3xl font-light text-white tracking-tight mb-2">MyAdmin</h1>
