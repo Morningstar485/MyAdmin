@@ -82,7 +82,7 @@ function AppContent() {
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <NavigationProvider>
         <Routes>
           <Route path="/*" element={<AppContent />} />
