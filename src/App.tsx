@@ -13,7 +13,6 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { LearningWorkspace } from './features/learning/LearningWorkspace';
 import { useWorkspace } from './contexts/WorkspaceContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import HabitsPage from './features/habits/pages/HabitsPage';
 
 import { Navigate, useLocation } from 'react-router-dom';
 
@@ -62,7 +61,6 @@ function AppContent() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/planner" element={<PlannerBoard />} />
             <Route path="/tasks" element={<TodoBoard />} />
-            <Route path="/habits" element={<HabitsPage />} />
             <Route path="/notes" element={<NotesBoard />} />
             <Route path="/settings" element={<SettingsBoard />} />
             {workspace === 'learning' && (

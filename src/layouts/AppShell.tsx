@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, CheckSquare, FileText, Settings, Menu, LogOut, GraduationCap, Briefcase, BookOpen, ChevronDown, Map, CalendarSync, NotebookTabs } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, FileText, Settings, Menu, LogOut, GraduationCap, Briefcase, BookOpen, ChevronDown, Map, NotebookTabs } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useWorkspace, type WorkspaceType } from '../contexts/WorkspaceContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,7 +8,7 @@ import { GlobalTimerStrip } from '../components/GlobalTimerStrip';
 import { PwaInstallPrompt } from '../components/PwaInstallPrompt';
 import logo from '../assets/logo.png';
 
-export type View = 'tasks' | 'notes' | 'dashboard' | 'settings' | 'planner' | 'library' | 'roadmap' | 'habits';
+export type View = 'tasks' | 'notes' | 'dashboard' | 'settings' | 'planner' | 'library' | 'roadmap';
 
 interface AppShellProps {
     children: React.ReactNode;
@@ -181,13 +181,6 @@ export function AppShell({ children }: AppShellProps) {
                                 icon={<CheckSquare size={20} />}
                                 label="Tasks"
                                 to="/tasks"
-                                onClick={() => setIsMobileOpen(false)}
-                                activeStyles={getActiveStyles}
-                            />
-                            <NavItem
-                                icon={<CalendarSync size={20} />}
-                                label="Habits"
-                                to="/habits"
                                 onClick={() => setIsMobileOpen(false)}
                                 activeStyles={getActiveStyles}
                             />
